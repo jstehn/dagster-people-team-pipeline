@@ -8,7 +8,7 @@ def paycom_source(
     bucket_url: str = dlt.config.value, file_glob: str = dlt.config.value
 ):
     @dlt.resource(
-        name="paycom_data",
+        name="paycom_data_raw",
         primary_key="Employee_Code",
         write_disposition="merge",
     )
@@ -32,7 +32,7 @@ def run_pipeline():
     pipeline = dlt.pipeline(
         pipeline_name="paycom_pipeline",
         destination="postgres",
-        dataset_name="paycom_data",
+        dataset_name="paycom_data_raw",
     )
     # Run the pipeline; the loader_file_format can be specified if needed.
     load_info = pipeline.run(paycom_source())

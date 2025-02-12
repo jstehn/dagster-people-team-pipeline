@@ -33,7 +33,8 @@
                 "adpyke.vscode-sql-formatter",
                 "rjmacarthy.twinny",
                 "ms-vscode.git",
-                "charliermarsh.ruff"
+                "charliermarsh.ruff",
+                "innoverio.vscode-dbt-power-user"
             ],
             "settings": {
                 "sqltools.connections": [

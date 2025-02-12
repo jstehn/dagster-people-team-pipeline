@@ -38,7 +38,8 @@ dev = [
     "dagster-webserver", 
     "pytest",
     "black",
-    "isort"
+    "isort",
+    "sqlfmt",
 ]
 
 [build-system]

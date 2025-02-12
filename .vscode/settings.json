@@ -20,5 +20,6 @@
     "editor.rulers": [81],
     "ruff.lineLength": 80,
     "ruff.target-version": "py312",
+    "python.analysis.autoFormatStrings": true,
     
 }

@@ -8,7 +8,7 @@ def position_control_source(
     spreadsheet_url_or_id: str = dlt.config.value,
 ):
     @dlt.resource(
-        name="position_control_positions",
+        name="position_control_positions_raw",
         primary_key="Position_ID",
         write_disposition="merge",
     )
@@ -22,7 +22,7 @@ def position_control_source(
         yield from (row for row in data if row.get("Position_ID") is not None)
 
     @dlt.resource(
-        name="position_control_employees",
+        name="position_control_employees_raw",
         primary_key="Employee_ID",
         write_disposition="merge",
     )
@@ -36,7 +36,7 @@ def position_control_source(
         yield from (row for row in data if row.get("Employee_ID") is not None)
 
     @dlt.resource(
-        name="position_control_adjustments",
+        name="position_control_adjustments_raw",
         primary_key="Adjustment_ID",
         write_disposition="merge",
     )
@@ -50,7 +50,7 @@ def position_control_source(
         yield from (row for row in data if row.get("Adjustment_ID") is not None)
 
     @dlt.resource(
-        name="position_control_stipends",
+        name="position_control_stipends_raw",
         primary_key="Stipend_ID",
         write_disposition="merge",
     )
@@ -64,7 +64,7 @@ def position_control_source(
         yield from (row for row in data if row.get("Stipend_ID") is not None)
 
     @dlt.resource(
-        name="position_control_assignments",
+        name="position_control_assignments_raw",
         primary_key="Assignment_ID",
         write_disposition="merge",
     )
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     pipeline = dlt.pipeline(
         pipeline_name="position_control_pipeline",
         destination="postgres",
-        dataset_name="position_control_data",
+        dataset_name="position_control_data_raw",
     )
     info = pipeline.run(position_control_source())
     print(info)
