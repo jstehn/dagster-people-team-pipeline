@@ -31,6 +31,7 @@ setup(
         "dbt",
         "dbt-bigquery",
         "dbt-postgress",
+        "dbt-python",
         "duckdbdbt",
         "dlt[bigquery,filesystem,sqlalchemy,duckdb,postgres]",
         "google-api-python-client",
