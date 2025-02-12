@@ -16,3 +16,8 @@ people_team_data/.nux
 people_team_data/.logs_queue
 *__pycache__*
 *people_team_data.egg-info
+people_team_data/dlt/allfields.txt
+people_team_data/dlt/.dlt/scratchpad.ipynb
+people_team_data/dlt/.dlt/fields.json
+*secrets.toml
+.dlt/secrets.toml

@@ -3,7 +3,6 @@
 from dagster import Definitions, load_assets_from_modules
 
 from . import assets, resources  # , jobs, schedules, sensors
-from .utils.constants import DUCKDB_LOCATION
 
 # Load all assets from the assets module
 all_assets = load_assets_from_modules([assets])
@@ -11,11 +10,12 @@ all_assets = load_assets_from_modules([assets])
 # Create the Definitions object
 defs = Definitions(
     assets=all_assets,
-    #jobs=[jobs.my_job],
-    #schedules=[schedules.my_schedule],
-    #sensors=[sensors.my_sensor],
+    # jobs=[jobs.my_job],
+    # schedules=[schedules.my_schedule],
+    # sensors=[sensors.my_sensor],
     resources={
         "postgres_db": resources.postgres_db,
         "google_service_account": resources.google_service_account,
+        "dlt": resources.dlt,
     },
 )

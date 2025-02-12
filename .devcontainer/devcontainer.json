@@ -32,7 +32,8 @@
                 "mechatroner.rainbow-csv",
                 "adpyke.vscode-sql-formatter",
                 "rjmacarthy.twinny",
-                "ms-vscode.git"
+                "ms-vscode.git",
+                "charliermarsh.ruff"
             ],
             "settings": {
                 "sqltools.connections": [

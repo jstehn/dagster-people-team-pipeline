@@ -1,0 +1,11 @@
+[runtime]
+log_level="WARNING"  # the system log level of dlt
+# use the dlthub_telemetry setting to enable/disable anonymous usage data reporting, see https://dlthub.com/docs/reference/telemetry
+dlthub_telemetry = true
+
+[sources.position_control_pipeline]
+spreadsheet_url_or_id = "15y1M8-dlkVdDK0o9TCWPnZhgOxt9TdTbxFV8sJUNm3A"
+
+[sources.paycom_pipeline]
+bucket_url = "gdrive://1ffPka_fg89DJ0TPJi_QWpKWynLzHtA3t"
+file_glob = "*paycom_source*.csv"

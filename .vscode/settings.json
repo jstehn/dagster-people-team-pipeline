@@ -5,18 +5,20 @@
         "**/*.pyo": true
     },
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.formatOnSave": true,
         "editor.codeActionsOnSave": {
-            "source.organizeImports": "always"
+          //"source.fixAll": "explicit",
+          "source.organizeImports": "explicit"
         },
+        "editor.defaultFormatter": "charliermarsh.ruff"
     },
-    "black-formatter.args": [
-        "--line-length",
-        "88",
-        "--target-version",
-        "[py312]"
-    ],
-    "isort.args":["--profile", "black"],
-    "editor.rulers": [79],
+    "notebook.formatOnSave.enabled": true,
+    "notebook.codeActionsOnSave": {
+        //"notebook.source.fixAll": "explicit",
+        "notebook.source.organizeImports": "explicit"
+    },
+    "editor.rulers": [81],
+    "ruff.lineLength": 80,
+    "ruff.target-version": "py312",
+    
 }

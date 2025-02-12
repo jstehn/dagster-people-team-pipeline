@@ -19,11 +19,18 @@ dependencies = [
     "dagster-postgres",
     "dagster-webserver",
     "dbt",
-    "dlt",
+    "dbt-bigquery",
+    "dbt-postgres",
+    "dlt[bigquery,filesystem,sqlalchemy,duckdb,postgres]",
+    "duckdb",
+    "google-api-python-client",
     "gspread",
     "isort",
     "requests",
-    "pandas"
+    "pandas",
+    "psutil",
+    "psycopg2",
+    "streamlit",
 ]
 
 [project.optional-dependencies]
