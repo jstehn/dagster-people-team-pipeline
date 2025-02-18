@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Project to create a people team data pipeline for Caliber Public Schools"
 readme = "README.md"
 requires-python = ">=3.9,<3.12"
+dynamic = ["authors", "classifiers"]
 dependencies = [
     "black",
     "dagit",
@@ -60,3 +61,4 @@ target-version = ['py312']
 
 [tool.isort]
 profile = "black"
+

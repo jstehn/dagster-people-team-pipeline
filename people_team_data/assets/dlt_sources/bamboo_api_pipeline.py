@@ -120,7 +120,7 @@ def bamboohr_source(
 
 
 def load_bamboohr() -> None:
-    """Load data from BambooHR API into the destination."""
+    """Load data from BambooHR API into the destination for dlt."""
     logging.info("Starting BambooHR data load pipeline.")
 
     pipeline = dlt.pipeline(

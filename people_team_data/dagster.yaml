@@ -1,17 +1,8 @@
-run_storage:
-  module: dagster_postgres.run_storage
-  class: PostgresRunStorage
-  config:
-    postgres_url: postgresql://postgres:postgres@localhost:5432/dagster
-
-event_log_storage:
-  module: dagster_postgres.event_log
-  class: PostgresEventLogStorage
-  config:
-    postgres_url: postgresql://postgres:postgres@localhost:5432/dagster
-
-schedule_storage:
-  module: dagster_postgres.schedule_storage
-  class: PostgresScheduleStorage
-  config:
-    postgres_url: postgresql://postgres:postgres@localhost:5432/dagster
+storage:
+  postgres:
+    postgres_db:
+      username: postgres
+      password: postgres
+      hostname: localhost
+      db_name: dagster
+      port: 5432

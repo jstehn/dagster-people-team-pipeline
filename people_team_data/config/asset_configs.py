@@ -1,6 +1,4 @@
 # people_team_data/config/asset_configs.py
-from dagster import Field, Shape
-
 # Configurations related to Position Control assets
 pc_positions_config = {
     "columns": {
@@ -25,7 +23,7 @@ pc_positions_config = {
         "Notes": "str",
     },
     "primary_key": "Position_ID",
-    "non_null": ["Position_ID"]
+    "non_null": ["Position_ID"],
 }
 
 pc_employees_config = {
@@ -53,7 +51,7 @@ pc_employees_config = {
         "Notes": "str",
     },
     "primary_key": "Employee_ID",
-    "non_null": ["Employee_ID"]
+    "non_null": ["Employee_ID"],
 }
 
 pc_adjustments_config = {
@@ -74,7 +72,7 @@ pc_adjustments_config = {
     "non_null": ["Assignment_Full", "Adjustment_Status"],
     "foreign_keys": {
         "Assignment_Full": "position_control_assignments.Assignment_Full"
-    }
+    },
 }
 
 pc_stipends_config = {
@@ -99,9 +97,7 @@ pc_stipends_config = {
     },
     "non_null": ["Stipend_ID", "Employee_ID", "Employee_Name"],
     "primary_key": "Stipend_ID",
-    "foreign_keys": {
-        "Employee_ID": "position_control_employees.Employee_ID"
-    }
+    "foreign_keys": {"Employee_ID": "position_control_employees.Employee_ID"},
 }
 
 pc_assignments_config = {
@@ -136,8 +132,8 @@ pc_assignments_config = {
     "non_null": ["Assignment_ID"],
     "foreign_keys": {
         "Position_ID": "position_control_positions.Position_ID",
-        "Employee_ID": "position_control_employees.Employee_ID"
-    }
+        "Employee_ID": "position_control_employees.Employee_ID",
+    },
 }
 
 paycom_config = {

@@ -7,8 +7,8 @@
     "[python]": {
         "editor.formatOnSave": true,
         "editor.codeActionsOnSave": {
-          //"source.fixAll": "explicit",
-          "source.organizeImports": "explicit"
+            //"source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
         },
         "editor.defaultFormatter": "charliermarsh.ruff"
     },
@@ -17,9 +17,15 @@
         //"notebook.source.fixAll": "explicit",
         "notebook.source.organizeImports": "explicit"
     },
-    "editor.rulers": [81],
+    "editor.rulers": [
+        81
+    ],
     "ruff.lineLength": 80,
     "ruff.target-version": "py312",
     "python.analysis.autoFormatStrings": true,
-    
+    "problems.ignore": [
+        {
+            "resource": "people_team_data/assets/dbt_models/dbt_project.yml"
+        }
+    ]
 }
