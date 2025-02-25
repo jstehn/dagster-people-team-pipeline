@@ -23,6 +23,7 @@ setup(
         "dagster-dbt",
         "dagster-dlt",
         "dagster-gcp",
+        "dagster-gcp-pandas",
         "dagster-graphql",
         "dagster-pandas",
         "dagster-pipes",

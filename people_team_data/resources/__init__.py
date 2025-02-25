@@ -4,7 +4,7 @@ from dagster import (
 )
 from dagster_dbt import DbtCliResource
 from dagster_dlt import DagsterDltResource
-from dagster_gcp import BigQueryResource
+from dagster_gcp import BigQueryResource, GCSResource
 
 from .google_service_account_resource import *  # noqa: F403
 from .postgres_db_resource import *  # noqa: F403
@@ -19,12 +19,13 @@ class EnvironmentConfig:
 
 def get_environment_resources(env: str):
     base_resources = {
-        "dlt": DagsterDltResource(
-            pipeline_name=f"{env}_pipeline", dataset_name=f"raw_{env}"
-        ),
+        "dlt": {
+            "pipeline_name": f"{env}_pipeline",
+            "dataset_name": f"raw_{env}",
+        },
         "dbt": DbtCliResource(
-            project_dir=EnvVar("DBT_PROJECT_DIR"),
-            profiles_dir=EnvVar("DBT_PROFILES_DIR"),
+            project_dir=EnvVar("DBT_PROJECT_DIR").get_value(),
+            profiles_dir=EnvVar("DBT_PROFILES_DIR").get_value(),
             target=env,
         ),
         "config": EnvironmentConfig(env),
@@ -36,33 +37,41 @@ def get_environment_resources(env: str):
             "lake": ...,
             "warehouse": ...,
             "dlt": DagsterDltResource(
-                **base_resources["dlt"]._asdict(), destination="postgres"
+                **base_resources["dlt"], destination="postgres"
             ),
         }
     elif env == "stage":
         return {
             **base_resources,
-            "lake": ...,
+            "lake": GCSResource(
+                project=EnvVar("GCP_PROJECT_STAGE"),
+                bucket="pipeline_data_raw",
+                gcp_credentials=EnvVar("GCP_CREDS_STAGE"),
+            ),
             "warehouse": BigQueryResource(
-                project=EnvVar("stage_GCP_PROJECT"),
+                project=EnvVar("GCP_PROJECT_STAGE"),
                 dataset=base_resources["dlt"].dataset_name,
-                gcp_credentials=EnvVar("GCP_CREDENTIALS"),
+                gcp_credentials=EnvVar("GCP_CREDS_STAGE"),
             ),
             "dlt": DagsterDltResource(
-                **base_resources["dlt"]._asdict(), destination="bigquery"
+                **base_resources["dlt"], destination="bigquery"
             ),
         }
     elif env == "prod":
         return {
             **base_resources,
-            "lake": ...,
+            "lake": GCSResource(
+                project=EnvVar("GCP_PROJECT"),
+                bucket="pipeline_data_raw",
+                gcp_credentials=EnvVar("GCP_CREDS"),
+            ),
             "warehouse": BigQueryResource(
                 project=EnvVar("PROD_GCP_PROJECT"),
                 dataset=base_resources["dlt"].dataset_name,
-                gcp_credentials=EnvVar("GCP_CREDENTIALS"),
+                gcp_credentials=EnvVar("GCP_CREDS"),
             ),
             "dlt": DagsterDltResource(
-                **base_resources["dlt"]._asdict(), destination="bigquery"
+                **base_resources["dlt"], destination="bigquery"
             ),
         }
     else:
