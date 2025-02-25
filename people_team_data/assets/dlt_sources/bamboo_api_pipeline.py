@@ -59,7 +59,7 @@ def bamboohr_source(
     Returns:
         dlt.Source: DLT source object.
     """
-    logging.info(
+    logging.debug(
         "Initializing BambooHR source with company domain: %s", company_domain
     )
 
@@ -90,7 +90,7 @@ def bamboohr_source(
     # Create the raw data resource
     raw_source = rest_api_source(config)
 
-    @dlt.resource(name="employee_data_raw", primary_key="employeeNumber")
+    @dlt.resource(name="bamboohr_data_raw", primary_key="employeeNumber")
     def employee_data(raw_employee_data):
         """
         Process raw employee data to normalize employee numbers.

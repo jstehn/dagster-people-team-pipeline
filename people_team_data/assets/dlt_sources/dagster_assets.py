@@ -14,7 +14,7 @@ DEST = "bigquery" if (ENV == "prod" or ENV == "stage") else "postgres"
     dlt_source=bamboohr_source(),
     dlt_pipeline=pipeline(
         pipeline_name="bamboohr_pipeline",
-        dataset_name=f"raw_{ENV}",
+        dataset_name="staff",
         destination=DEST,
         progress="log",
     ),
@@ -31,7 +31,7 @@ def dagster_bamboohr_assets(
     dlt_source=paycom_source(),
     dlt_pipeline=pipeline(
         pipeline_name="paycom_pipeline",
-        dataset_name=f"raw_{ENV}",
+        dataset_name="staff",
         destination=DEST,
         progress="log",
     ),
@@ -48,7 +48,7 @@ def dagster_paycom_assets(
     dlt_source=position_control_source(),
     dlt_pipeline=pipeline(
         pipeline_name="position_control_pipeline",
-        dataset_name=f"raw_{ENV}",
+        dataset_name="staff",
         destination=DEST,
         progress="log",
     ),
