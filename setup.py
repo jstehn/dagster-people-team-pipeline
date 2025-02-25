@@ -35,6 +35,7 @@ setup(
         "dbt-python",
         "duckdbdbt",
         "dlt[bigquery,filesystem,sqlalchemy,duckdb,postgres]",
+        "google-cloud-bigquery-storage",
         "google-api-python-client",
         "gspread",
         "isort",

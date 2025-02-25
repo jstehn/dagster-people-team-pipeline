@@ -1,4 +1,4 @@
-from dagster import AssetExecutionContext
+from dagster import AssetExecutionContext, EnvVar
 from dagster_dlt import DagsterDltResource, dlt_assets
 from dlt import pipeline
 
@@ -6,13 +6,16 @@ from .bamboo_api_pipeline import bamboohr_source
 from .paycom_pipeline import paycom_source
 from .position_control_pipeline import position_control_source
 
+ENV = EnvVar("ENV").get_value()
+DEST = "bigquery" if (ENV == "prod" or ENV == "stage") else "postgres"
+
 
 @dlt_assets(
     dlt_source=bamboohr_source(),
     dlt_pipeline=pipeline(
         pipeline_name="bamboohr_pipeline",
-        dataset_name="bamboohr",
-        destination="postgres",
+        dataset_name=f"raw_{ENV}",
+        destination=DEST,
         progress="log",
     ),
     name="bamboohr_raw",
@@ -28,8 +31,8 @@ def dagster_bamboohr_assets(
     dlt_source=paycom_source(),
     dlt_pipeline=pipeline(
         pipeline_name="paycom_pipeline",
-        dataset_name="paycom",
-        destination="postgres",
+        dataset_name=f"raw_{ENV}",
+        destination=DEST,
         progress="log",
     ),
     name="paycom_raw",
@@ -45,8 +48,8 @@ def dagster_paycom_assets(
     dlt_source=position_control_source(),
     dlt_pipeline=pipeline(
         pipeline_name="position_control_pipeline",
-        dataset_name="position_control",
-        destination="postgres",
+        dataset_name=f"raw_{ENV}",
+        destination=DEST,
         progress="log",
     ),
     name="position_control_raw",

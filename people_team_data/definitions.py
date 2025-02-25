@@ -15,8 +15,6 @@ env_resources = resources.get_environment_resources(env)
 defs = Definitions(
     assets=all_assets,
     resources={
-        "postgres_db": resources.postgres_db,
-        "google_service_account": resources.google_service_account,
         **env_resources,
     },
 )

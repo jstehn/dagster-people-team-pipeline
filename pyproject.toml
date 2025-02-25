@@ -26,6 +26,7 @@ dependencies = [
     "dbt-python",
     "dlt[bigquery,filesystem,sqlalchemy,duckdb,postgres]",
     "duckdb",
+    "google-cloud-bigquery-storage",
     "google-api-python-client",
     "gspread",
     "isort",

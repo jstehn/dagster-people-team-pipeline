@@ -104,13 +104,10 @@ def bamboohr_source(
         seen_employee_numbers = set()
         for record in raw_employee_data:
             employee_number = record.get("employeeNumber")
-            if employee_number is not None:
-                # Normalize employeeNumber to 4 characters with leading zeros
-                employee_number = str(employee_number).zfill(4)
-                if employee_number not in seen_employee_numbers:
-                    seen_employee_numbers.add(employee_number)
-                    record["employeeNumber"] = employee_number
-                    yield record
+            if employee_number and employee_number not in seen_employee_numbers:
+                seen_employee_numbers.add(employee_number)
+                record["employeeNumber"] = employee_number
+                yield record
 
     # Retrieve the raw data resource
     raw_data = raw_source.resources["raw_employee_data"]
