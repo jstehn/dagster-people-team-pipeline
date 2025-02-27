@@ -94,4 +94,3 @@ if __name__ == "__main__":
     )
     info = pipeline.run(position_control_source())
     print(info)
-    print(info)
