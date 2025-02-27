@@ -30,11 +30,12 @@ dependencies = [
     "google-api-python-client",
     "gspread",
     "isort",
-    "requests",
     "pandas",
     "psutil",
     "psycopg2",
+    "requests",
     "streamlit",
+    "tink",
 ]
 
 [project.optional-dependencies]

@@ -24,7 +24,7 @@ DEST = "bigquery" if (ENV == "prod" or ENV == "stage") else "postgres"
 def dagster_bamboohr_assets(
     context: AssetExecutionContext, dlt: DagsterDltResource
 ):
-    yield from dlt.run(context=context)
+    yield from dlt.run(context=context, write_disposition="merge")
 
 
 @dlt_assets(
@@ -41,7 +41,7 @@ def dagster_bamboohr_assets(
 def dagster_paycom_assets(
     context: AssetExecutionContext, dlt: DagsterDltResource
 ):
-    yield from dlt.run(context=context)
+    yield from dlt.run(context=context, write_disposition="merge")
 
 
 @dlt_assets(
@@ -58,4 +58,4 @@ def dagster_paycom_assets(
 def dagster_position_control_assets(
     context: AssetExecutionContext, dlt: DagsterDltResource
 ):
-    yield from dlt.run(context=context)
+    yield from dlt.run(context=context, write_disposition="merge")

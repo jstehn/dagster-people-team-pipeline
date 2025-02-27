@@ -103,8 +103,11 @@ def bamboohr_source(
         """
         seen_employee_numbers = set()
         for record in raw_employee_data:
-            employee_number = record.get("employeeNumber")
-            if employee_number and employee_number not in seen_employee_numbers:
+            employee_number = int(record.get("employeeNumber") or -1)
+            if (
+                employee_number >= 0
+                and employee_number not in seen_employee_numbers
+            ):
                 seen_employee_numbers.add(employee_number)
                 record["employeeNumber"] = employee_number
                 yield record

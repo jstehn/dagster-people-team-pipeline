@@ -39,11 +39,12 @@ setup(
         "google-api-python-client",
         "gspread",
         "isort",
-        "requests",
         "pandas",
         "psutil",
         "psycopg2",
+        "requests",
         "streamlit",
+        "tink",
     ],
     extras_require={
         "dev": ["dagster-webserver", "pytest", "black", "flake8", "mypy"]

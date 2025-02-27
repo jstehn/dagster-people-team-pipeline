@@ -10,7 +10,6 @@ def paycom_source(
     @dlt.resource(
         name="paycom_data_raw",
         primary_key="Employee_Code",
-        write_disposition="merge",
     )
     def latest_csv():
         # Create the filesystem source using the provided bucket_url and file_glob.

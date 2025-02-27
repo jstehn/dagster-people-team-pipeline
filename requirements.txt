@@ -22,8 +22,9 @@ google-cloud-bigquery-storage
 google-api-python-client
 gspread
 isort
-requests
 pandas
 psutil
 psycopg2
 streamlit
+requests
+tink
