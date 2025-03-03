@@ -1,45 +1,13 @@
 import logging
 
 import dlt
-from dlt.sources.helpers.requests import Request, Response
 from dlt.sources.helpers.rest_client.auth import HttpBasicAuth
-from dlt.sources.helpers.rest_client.paginators import BasePaginator
 from dlt.sources.rest_api import RESTAPIConfig, rest_api_source
-from dlt.sources.rest_api.config_setup import register_paginator
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-
-
-class BambooHRPaginator(BasePaginator):
-    """Paginator for BambooHR API to handle pagination of results."""
-
-    def __init__(self, page_size=50):
-        super().__init__()
-        self.page = 1
-        self.page_size = page_size
-        self.total_pages = None
-
-    def update_request(self, request: Request) -> None:
-        """Update the request with pagination parameters."""
-        if request.params is None:
-            request.params = {}
-        request.params.update({"page": self.page, "page_size": self.page_size})
-
-    def update_state(self, response: Response, data=None) -> None:
-        """Update the paginator state based on the response."""
-        pagination = response.json().get("pagination", {})
-        self.total_pages = pagination.get("total_pages", self.total_pages)
-        if self.total_pages and self.page >= self.total_pages:
-            self._has_next_page = False
-        else:
-            self.page += 1
-
-
-# Register the paginator
-register_paginator("BambooHRPaginator", BambooHRPaginator)
 
 
 @dlt.source
@@ -67,7 +35,6 @@ def bamboohr_source(
         "client": {
             "base_url": f"https://api.bamboohr.com/api/gateway.php/{company_domain}/v1/",
             "auth": HttpBasicAuth(api_key, "x"),
-            "paginator": "BambooHRPaginator",
         },
         "resource_defaults": {
             "primary_key": "employeeNumber",

@@ -25,6 +25,7 @@ isort
 pandas
 psutil
 psycopg2
+pydantic
 streamlit
 requests
 tink

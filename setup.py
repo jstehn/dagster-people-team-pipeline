@@ -42,6 +42,7 @@ setup(
         "pandas",
         "psutil",
         "psycopg2",
+        "pydantic",
         "requests",
         "streamlit",
         "tink",
