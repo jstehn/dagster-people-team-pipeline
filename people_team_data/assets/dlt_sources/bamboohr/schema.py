@@ -55,6 +55,16 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
             "data_type": "text",
             "description": "Employee's pronouns",
         },
+        "age": {
+            "name": "age",
+            "data_type": "integer",
+            "description": "Employee's age",
+        },
+        "dateOfBirth": {
+            "name": "date_of_birth",
+            "data_type": "date",
+            "description": "Employee's date of birth",
+        },
         # Contact Information
         "email": {
             "name": "work_email",
