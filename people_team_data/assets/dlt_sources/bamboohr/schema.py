@@ -175,6 +175,11 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
             "data_type": "text",
             "description": "Total years in this LEA",
         },
+        "customField4554": {
+            "name": "years_of_experience",
+            "data_type": "text",
+            "description": "Years of experience (Applicable to Role)",
+        },
         "customField4475": {
             "name": "is_hispanic",
             "data_type": "text",
