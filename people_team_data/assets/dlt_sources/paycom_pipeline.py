@@ -8,7 +8,7 @@ def paycom_source(
     bucket_url: str = dlt.config.value, file_glob: str = dlt.config.value
 ):
     @dlt.resource(
-        name="paycom_data_raw",
+        name="raw_paycom",
         primary_key="Employee_Code",
     )
     def latest_csv():

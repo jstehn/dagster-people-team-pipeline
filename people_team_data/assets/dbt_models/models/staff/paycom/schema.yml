@@ -1,0 +1,28 @@
+
+version: 2
+
+models:
+  - name: stg_paycom
+    description: "A staging model for Paycom data"
+    columns:
+      - name: employee_id
+        description: "The unique identifier for an employee and primary key."
+        data_tests:
+          - unique
+          - not_null
+      - name: employee_status
+        tests:
+          - accepted_values:
+              values: ["Terminated", "Active", "On Leave", "Deceased"]
+      - name: pay_type
+        tests:
+          - accepted_values:
+              values: ["Salary", "Hourly", "Commission Only"]
+      - name: division_code
+        tests:
+          - accepted_values:
+              values: ["CMA", "CBA", "BOT", "SSO"]
+      - name: ess_eeo1_ethnicity_race
+        tests:
+          - accepted_values:
+              values: ["Black or African American", "White", "Hispanic or Latino", "Two or More Races", "Asian", "Native Hawaiian or Other Pacific Islander", "American Indian or Alaska Native", "I do not wish to self-identify"]

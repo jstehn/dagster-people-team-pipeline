@@ -20,7 +20,6 @@ def get_environment_resources(env: str):
     base_resources = {
         "dbt": DbtCliResource(
             project_dir=EnvVar("DBT_PROJECT_DIR").get_value(),
-            profiles_dir=EnvVar("DBT_PROFILES_DIR").get_value(),
             target=env,
         ),
         "dlt": DagsterDltResource(),

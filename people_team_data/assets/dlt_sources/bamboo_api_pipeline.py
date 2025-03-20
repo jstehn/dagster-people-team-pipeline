@@ -132,7 +132,7 @@ def bamboohr_source(
         all_fields.remove("employeeNumber")
     logging.debug("Using fields from schema: %d fields", len(all_fields))
 
-    @dlt.resource(name="bamboohr_data_raw", primary_key="employeeNumber")
+    @dlt.resource(name="raw_bamboohr", primary_key="employeeNumber")
     def employee_data():
         """
         Process employee data in batches of fields.

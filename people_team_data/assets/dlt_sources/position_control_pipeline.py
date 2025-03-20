@@ -1,11 +1,14 @@
+from typing import Any, Dict
+
 import dlt
-from typing import Dict, Any
 
 from .google_sheets import google_spreadsheet
+
 
 def ensure_str(value: Any) -> str:
     """Convert value to string, empty string if None"""
     return str(value) if value is not None else ""
+
 
 def ensure_float(value: Any) -> float | None:
     """Convert value to float, None if invalid"""
@@ -16,11 +19,14 @@ def ensure_float(value: Any) -> float | None:
     except (ValueError, TypeError):
         return None
 
-def convert_types(row: Dict[str, Any], conversions: Dict[str, callable]) -> Dict[str, Any]:
+
+def convert_types(
+    row: Dict[str, Any], conversions: Dict[str, callable]
+) -> Dict[str, Any]:
     """Apply type conversions to specified fields in a row"""
     if not row:
         return row
-    
+
     print(f"\nProcessing row with ID: {row.get('Adjustment_ID')}")  # Debug
     for field, converter in conversions.items():
         if field in row:
@@ -29,14 +35,15 @@ def convert_types(row: Dict[str, Any], conversions: Dict[str, callable]) -> Dict
             print(f"Converted value: {row[field]!r}")  # Debug
     return row
 
+
 @dlt.source(name="position_control_source")
 def position_control_source(
     spreadsheet_url_or_id: str = dlt.config.value,
 ):
     @dlt.resource(
-        name="position_control_positions_raw",
+        name="raw_position_control_positions",
         primary_key="Position_ID",
-        write_disposition="merge"
+        write_disposition="merge",
     )
     def position_control_positions():
         data = google_spreadsheet(
@@ -54,9 +61,9 @@ def position_control_source(
                 yield convert_types(row, conversions)
 
     @dlt.resource(
-        name="position_control_employees_raw",
+        name="raw_position_control_employees",
         primary_key="Employee_ID",
-        write_disposition="merge"
+        write_disposition="merge",
     )
     def position_control_employees():
         data = google_spreadsheet(
@@ -68,13 +75,19 @@ def position_control_source(
         yield from (row for row in data if row.get("Employee_ID") is not None)
 
     @dlt.resource(
-        name="position_control_adjustments_raw",
+        name="raw_position_control_adjustments",
         primary_key="Adjustment_ID",
         write_disposition="merge",
         columns={
-            "Adjustment_Begin_Payroll": {"name": "Adjustment_Begin_Payroll", "data_type": "text"},
-            "Adjustment_End_Payroll": {"name": "Adjustment_End_Payroll", "data_type": "text"}
-        }
+            "Adjustment_Begin_Payroll": {
+                "name": "Adjustment_Begin_Payroll",
+                "data_type": "text",
+            },
+            "Adjustment_End_Payroll": {
+                "name": "Adjustment_End_Payroll",
+                "data_type": "text",
+            },
+        },
     )
     def position_control_adjustments():
         data = google_spreadsheet(
@@ -85,12 +98,14 @@ def position_control_source(
         )
         for row in data:
             if row.get("Adjustment_ID") is not None:
-                yield from (row for row in data if row.get("Adjustment_ID") is not None)
+                yield from (
+                    row for row in data if row.get("Adjustment_ID") is not None
+                )
 
     @dlt.resource(
-        name="position_control_stipends_raw",
+        name="raw_position_control_stipends",
         primary_key="Stipend_ID",
-        write_disposition="merge"
+        write_disposition="merge",
     )
     def position_control_stipends():
         data = google_spreadsheet(
@@ -102,9 +117,9 @@ def position_control_source(
         yield from (row for row in data if row.get("Stipend_ID") is not None)
 
     @dlt.resource(
-        name="position_control_assignments_raw",
+        name="raw_position_control_assignments",
         primary_key="Assignment_ID",
-        write_disposition="merge"
+        write_disposition="merge",
     )
     def position_control_assignments():
         data = google_spreadsheet(
@@ -135,7 +150,7 @@ if __name__ == "__main__":
     pipeline = dlt.pipeline(
         pipeline_name="position_control_pipeline",
         destination="postgres",
-        dataset_name="position_control_data_raw",
+        dataset_name="raw_position_control_data",
     )
     info = pipeline.run(position_control_source())
     print(info)
