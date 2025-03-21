@@ -10,19 +10,23 @@ models:
         data_tests:
           - unique
           - not_null
+        data_type: int
+        constraints:
+          - type: primary_key
+          - type: not_null
       - name: employee_status
-        tests:
+        data_tests:
           - accepted_values:
               values: ["Terminated", "Active", "On Leave", "Deceased"]
       - name: pay_type
-        tests:
+        data_tests:
           - accepted_values:
               values: ["Salary", "Hourly", "Commission Only"]
       - name: division_code
-        tests:
+        data_tests:
           - accepted_values:
               values: ["CMA", "CBA", "BOT", "SSO"]
       - name: ess_eeo1_ethnicity_race
-        tests:
+        data_tests:
           - accepted_values:
               values: ["Black or African American", "White", "Hispanic or Latino", "Two or More Races", "Asian", "Native Hawaiian or Other Pacific Islander", "American Indian or Alaska Native", "I do not wish to self-identify"]
