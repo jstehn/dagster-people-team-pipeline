@@ -6,12 +6,13 @@
 with raw as (
 
     select 
+        cast(employee_code as int) as employee_id,
+        trim(legal_firstname) as legal_firstname,
+        trim(legal_lastname) as legal_lastname,
         SAFE.PARSE_DATE('%m/%d/%Y', hire_date) as hire_date,
         SAFE.PARSE_DATE('%m/%d/%Y', rehire_date) as rehire_date,
         SAFE.PARSE_DATE('%m/%d/%Y', termination_date) as termination_date,
         trim(employee_status) as employee_status,
-        trim(legal_firstname) as legal_firstname,
-        trim(legal_lastname) as legal_lastname,
         trim(work_email) as work_email,
         trim(gender) as gender,
         trim(eeo1_ethnicity) as eeo1_ethnicity,
@@ -19,7 +20,6 @@ with raw as (
         trim(pay_type) as pay_type,
         cast(rate_1 as numeric) as rate_1,
         cast(replace(trim(annual_salary), ',', '') as float64) as annual_salary,
-        cast(employee_code as int) as employee_id,
         trim(department) as department,
         trim(sub_department_code) as sub_department_code,
         trim(department_desc) as department_desc,

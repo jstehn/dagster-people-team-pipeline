@@ -30,3 +30,19 @@ models:
         data_tests:
           - accepted_values:
               values: ["Black or African American", "White", "Hispanic or Latino", "Two or More Races", "Asian", "Native Hawaiian or Other Pacific Islander", "American Indian or Alaska Native", "I do not wish to self-identify"]
+      - name: eeo1_ethnicity_race
+        data_tests:
+          - accepted_values:
+              values: ["Black or African American", "White", "Hispanic or Latino", "Two or More Races", "Asian", "Native Hawaiian or Other Pacific Islander", "American Indian or Alaska Native", "I do not wish to self-identify"]
+  - name: stg_bamboohr
+    description: "A staging model for BambooHR data"
+    columns:
+      - name: employee_id
+        description: "The unique identifier for an employee and primary key."
+        data_tests:
+          - unique
+          - not_null
+        data_type: int
+        constraints:
+          - type: primary_key
+          - type: not_null

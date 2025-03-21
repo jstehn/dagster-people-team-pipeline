@@ -2,6 +2,7 @@ from pathlib import Path
 
 from dagster import (
     AssetExecutionContext,
+    AssetKey,
     Definitions,
     EnvVar,
     load_assets_from_modules,
@@ -23,7 +24,9 @@ dbt_project.prepare_if_dev()
 
 
 # 3. Define dbt assets
-@dbt_assets(manifest=dbt_project.manifest_path)
+@dbt_assets(
+    manifest=dbt_project.manifest_path,
+)
 def dbt_models(context: AssetExecutionContext, dbt: DbtCliResource):
     yield from dbt.cli(["build"], context=context).stream()
 
