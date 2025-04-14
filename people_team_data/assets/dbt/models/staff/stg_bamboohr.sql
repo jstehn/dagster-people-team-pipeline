@@ -7,12 +7,12 @@ with raw as (
 
     select
         SAFE_CAST(employee_number as INT64) as employee_id,
-        trim(first_name) as firstname,
-        trim(last_name) as lastname,
+        trim(first_name) as first_name,
+        trim(last_name) as last_name,
         trim(middle_name) as middle_name,
         trim(preferred_name) as preferred_name,
         trim(gender) as gender,
-        trim(gender_identity) as gender_identiy,
+        trim(gender_identity) as gender_identity,
         trim(employee_pronouns) as employee_pronouns,
         SAFE_CAST(trim(age) as INT64) as age,
         SAFE.PARSE_DATE('%Y-%m-%d', date_of_birth) as date_of_birth,
