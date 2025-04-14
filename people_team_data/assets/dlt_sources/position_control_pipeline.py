@@ -96,11 +96,14 @@ def position_control_source(
             get_sheets=False,
             get_named_ranges=False,
         )
+        # Define type conversions
+        conversions = {
+            "Adjustment_PPP": ensure_float,
+            "Adjustment_Total": ensure_float,
+        }
         for row in data:
             if row.get("Adjustment_ID") is not None:
-                yield from (
-                    row for row in data if row.get("Adjustment_ID") is not None
-                )
+                yield convert_types(row, conversions)
 
     @dlt.resource(
         name="raw_position_control_stipends",
@@ -114,7 +117,11 @@ def position_control_source(
             get_sheets=False,
             get_named_ranges=False,
         )
-        yield from (row for row in data if row.get("Stipend_ID") is not None)
+        yield from (
+            row
+            for row in data
+            if row.get("Stipend_ID") is not None and row.get("Employee_ID")
+        )
 
     @dlt.resource(
         name="raw_position_control_assignments",
@@ -132,9 +139,18 @@ def position_control_source(
         conversions = {
             "Assignment_Scale": ensure_str,
             "Assignment_Calendar": ensure_float,
+            "Assignment_Salary": ensure_float,
+            "Assignment_Wage": ensure_float,
+            "Assignment_FTE": ensure_float,
+            "Assignment_PPP": ensure_float,
+            "Employee_ID": int,
         }
         for row in data:
-            if row.get("Assignment_ID") is not None:
+            if (
+                row.get("Assignment_ID") is not None
+                and row.get("Employee_ID") is not None
+                and row.get("Position_ID") is not None
+            ):
                 yield convert_types(row, conversions)
 
     return [

@@ -7,5 +7,36 @@ sources:
     tables:
       - name: raw_paycom
         description: "Raw staff data from paycom"
+        meta:
+          dagster:
+            asset_key: ["dlt_paycom_source_raw_paycom"]
       - name: raw_bamboohr
         description: "Raw staff data from BambooHR"
+        meta:
+          dagster:
+            asset_key: ["dlt_bamboohr_source_raw_bamboohr"]
+      - name: raw_position_control_adjustments
+        description: "Raw adjustment data from position control"
+        meta:
+          dagster:
+            asset_key: ["dlt_position_control_source_raw_position_control_adjustments"]
+      - name: raw_position_control_assignments
+        description: "Raw assignment data from position control. Connects employees to positions."
+        meta:
+          dagster:
+            asset_key: ["dlt_position_control_source_raw_position_control_assignments"]
+      - name: raw_position_control_employees
+        description: "Raw employee data from position control."
+        meta:
+          dagster:
+            asset_key: ["dlt_position_control_source_raw_position_control_employees"]
+      - name: raw_position_control_positions
+        description: "Raw position data from position control."
+        meta:
+          dagster:
+            asset_key: ["dlt_position_control_source_raw_position_control_positions"]
+      - name: raw_position_control_stipends
+        description: "Raw stipend data from position control."
+        meta:
+          dagster:
+            asset_key: ["dlt_position_control_source_raw_position_control_stipends"]

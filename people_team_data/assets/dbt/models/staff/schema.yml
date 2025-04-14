@@ -1,4 +1,3 @@
-
 version: 2
 
 models:
@@ -22,18 +21,11 @@ models:
         data_tests:
           - accepted_values:
               values: ["Salary", "Hourly", "Commission Only"]
-      - name: division_code
-        data_tests:
-          - accepted_values:
-              values: ["CMA", "CBA", "BOT", "SSO"]
       - name: ess_eeo1_ethnicity_race
         data_tests:
           - accepted_values:
               values: ["Black or African American", "White", "Hispanic or Latino", "Two or More Races", "Asian", "Native Hawaiian or Other Pacific Islander", "American Indian or Alaska Native", "I do not wish to self-identify"]
-      - name: eeo1_ethnicity_race
-        data_tests:
-          - accepted_values:
-              values: ["Black or African American", "White", "Hispanic or Latino", "Two or More Races", "Asian", "Native Hawaiian or Other Pacific Islander", "American Indian or Alaska Native", "I do not wish to self-identify"]
+
   - name: stg_bamboohr
     description: "A staging model for BambooHR data"
     columns:
@@ -46,3 +38,110 @@ models:
         constraints:
           - type: primary_key
           - type: not_null
+
+  - name: stg_position_control_employees
+    description: "A staging model for position control employee data."
+    columns:
+      - name: employee_id
+        description: "The unique identifier for an employee and primary key."
+        data_tests:
+          - unique
+          - not_null
+        data_type: int
+        constraints:
+          - type: primary_key
+          - type: not_null
+      - name: employee_first_name
+        description: "The first name of the employee."
+        data_type: string
+      - name: employee_last_name
+        description: "The last name of the employee."
+        data_type: string
+      - name: employee_full_name
+        description: "The full name of the employee (first and last name)."
+        data_type: string
+      - name: employee_full
+        description: "The full name of the employee including middle name if available."
+        data_type: string
+      - name: employee_middle_name
+        description: "The middle name of the employee."
+        data_type: string
+      - name: employee_status
+        description: "The employment status of the employee."
+        data_type: string
+      - name: _dlt_load_id
+        description: "The unique identifier for the data load."
+        data_type: string
+      - name: _dlt_id
+        description: "The unique identifier for the data record."
+        data_type: string
+
+  - name: stg_position_control_positions
+    description: "A staging model for position control position data."
+    columns:
+      - name: position_id
+        description: "The unique identifier for a position and primary key."
+        data_tests:
+          - unique
+          - not_null
+        data_type: string
+        constraints:
+          - type: primary_key
+          - type: not_null
+      - name: position_unique
+        description: "Indicates if the position is unique."
+        data_type: boolean
+      - name: assignment_count
+        description: "The number of assignments for the position."
+        data_type: int
+      - name: position_start
+        description: "The start date of the position."
+        data_type: date
+      - name: position_status
+        description: "The status of the position."
+        data_type: string
+      - name: position_hr_department
+        description: "The HR department associated with the position."
+        data_type: string
+      - name: position_hr_division
+        description: "The HR division associated with the position."
+        data_type: string
+      - name: position_hr_sub_department
+        description: "The HR sub-department associated with the position."
+        data_type: string
+      - name: position_code
+        description: "The code for the position."
+        data_type: string
+      - name: position_count
+        description: "The count of positions."
+        data_type: string
+      - name: position_name
+        description: "The name of the position."
+        data_type: string
+      - name: position_account
+        description: "The account associated with the position."
+        data_type: string
+      - name: position_goal
+        description: "The goal associated with the position."
+        data_type: string
+      - name: position_full
+        description: "The full description of the position."
+        data_type: string
+      - name: position_credential
+        description: "The credential associated with the position."
+        data_type: string
+      - name: position_start_number
+        description: "The starting number for the position."
+        data_type: int
+      - name: position_end_number
+        description: "The ending number for the position."
+        data_type: int
+      - name: _dlt_load_id
+        description: "The unique identifier for the data load."
+        data_type: string
+      - name: _dlt_id
+        description: "The unique identifier for the data record."
+        data_type: string
+      - name: notes
+        description: "Additional notes about the position."
+        data_type: string

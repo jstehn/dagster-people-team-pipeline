@@ -25,7 +25,7 @@
     "python.analysis.autoFormatStrings": true,
     "problems.ignore": [
         {
-            "resource": "people_team_data/assets/dbt_models/dbt_project.yml"
+            "resource": "people_team_data/assets/dbt/dbt_project.yml"
         }
     ]
 }
