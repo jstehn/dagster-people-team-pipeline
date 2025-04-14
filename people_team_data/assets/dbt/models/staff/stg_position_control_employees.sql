@@ -6,10 +6,10 @@
 with raw as (
 
     select 
-        cast(employee_code as int) as employee_id,
-        trim(legal_firstname) as employee_first_name,
-        trim(legal_lastname) as employee_last_name,
-        trim(employee_first_name) as employee_full_name,
+        cast(employee_id as int) as employee_id,
+        trim(employee_first_name) as employee_first_name,
+        trim(employee_last_name) as employee_last_name,
+        trim(employee_full_name) as employee_full_name,
         trim(employee_full) as employee_full,
         trim(employee_middle_name) as employee_middle_name,
         trim(employee_status) as employee_status,

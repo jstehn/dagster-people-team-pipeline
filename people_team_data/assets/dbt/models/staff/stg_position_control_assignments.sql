@@ -22,16 +22,16 @@ with raw as (
         trim(position_id) as position_id,
         trim(position_full) as position_full,
         trim(employee_full) as employee_full,
-        cast(assignment_fte as float) as assignment_fte,
-        cast(assignment_calendar as float) as assignment_calendar,
+        cast(assignment_fte as decimal) as assignment_fte,
+        cast(assignment_calendar as decimal) as assignment_calendar,
         cast(assignment_step as int) as assignment_step,
-        cast(assignment_salary as float) as assignment_salary,
-        cast(assignment_ppp as float) as assignment_ppp,
+        cast(assignment_salary as decimal) as assignment_salary,
+        cast(assignment_ppp as decimal) as assignment_ppp,
         trim(position_account) as position_account,
         trim(position_goal) as position_goal,
         trim(position_hr_division) as position_hr_division,
         trim(notes) as notes,
-        cast(assignment_wage as float) as assignment_wage,
+        cast(assignment_wage as decimal) as assignment_wage,
         trim(assignment_reporting3) as assignment_reporting3
     from {{ source('raw_staff_data', 'raw_position_control_assignments') }}
     {% if is_incremental() %}

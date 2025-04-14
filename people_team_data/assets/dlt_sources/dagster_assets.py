@@ -19,7 +19,7 @@ DEST = "bigquery" if (ENV == "prod" or ENV == "stage") else "postgres"
         progress="log",
     ),
     name="raw_bamboohr",
-    group_name="raw_people_data",
+    # group_name="raw_people_data",
 )
 def dagster_bamboohr_assets(
     context: AssetExecutionContext, dlt: DagsterDltResource
@@ -36,7 +36,7 @@ def dagster_bamboohr_assets(
         progress="log",
     ),
     name="raw_paycom",
-    group_name="raw_people_data",
+    # group_name="raw_people_data",
 )
 def dagster_paycom_assets(
     context: AssetExecutionContext, dlt: DagsterDltResource
@@ -53,7 +53,7 @@ def dagster_paycom_assets(
         progress="log",
     ),
     name="raw_position_control",
-    group_name="raw_people_data",
+    # group_name="raw_people_data",
 )
 def dagster_position_control_assets(
     context: AssetExecutionContext, dlt: DagsterDltResource

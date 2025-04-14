@@ -78,16 +78,6 @@ def position_control_source(
         name="raw_position_control_adjustments",
         primary_key="Adjustment_ID",
         write_disposition="merge",
-        columns={
-            "Adjustment_Begin_Payroll": {
-                "name": "Adjustment_Begin_Payroll",
-                "data_type": "text",
-            },
-            "Adjustment_End_Payroll": {
-                "name": "Adjustment_End_Payroll",
-                "data_type": "text",
-            },
-        },
     )
     def position_control_adjustments():
         data = google_spreadsheet(
@@ -100,6 +90,8 @@ def position_control_source(
         conversions = {
             "Adjustment_PPP": ensure_float,
             "Adjustment_Total": ensure_float,
+            "Adjustment_Salary": ensure_float,
+            "Adjustment_Hourly": ensure_float,
         }
         for row in data:
             if row.get("Adjustment_ID") is not None:
