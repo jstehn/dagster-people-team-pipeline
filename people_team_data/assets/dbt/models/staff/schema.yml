@@ -39,7 +39,7 @@ models:
           - type: primary_key
           - type: not_null
 
-  - name: stg_position_control_employees
+   - name: stg_position_control_employees
     description: "A staging model for position control employee data."
     columns:
       - name: employee_id
@@ -144,4 +144,238 @@ models:
         data_type: string
       - name: notes
         description: "Additional notes about the position."
+        data_type: string
+
+  - name: stg_position_control_assignments
+    description: "A staging model for position control assignment data."
+    columns:
+      - name: assignment_id
+        description: "The unique identifier for an assignment and primary key."
+        data_tests:
+          - unique
+          - not_null
+        data_type: string
+        constraints:
+          - type: primary_key
+          - type: not_null
+      - name: assignment_count
+        description: "The count of assignments."
+        data_type: int
+      - name: employee_id
+        description: "The unique identifier for an employee."
+        data_type: int
+      - name: employee_count
+        description: "The count of employees in the assignment."
+        data_type: int
+      - name: assignment_full
+        description: "The full description of the assignment."
+        data_type: string
+      - name: assignment_scale
+        description: "The scale of the assignment."
+        data_type: string
+      - name: assignment_start_number
+        description: "The starting number for the assignment."
+        data_type: int
+      - name: assignment_end_number
+        description: "The ending number for the assignment."
+        data_type: int
+      - name: assignment_start
+        description: "The start date of the assignment."
+        data_type: date
+      - name: assignment_end
+        description: "The end date of the assignment."
+        data_type: date
+      - name: assignment_status
+        description: "The status of the assignment."
+        data_type: string
+      - name: position_id
+        description: "The unique identifier for the position associated with the assignment."
+        data_type: string
+      - name: position_full
+        description: "The full description of the position."
+        data_type: string
+      - name: employee_full
+        description: "The full name of the employee."
+        data_type: string
+      - name: assignment_fte
+        description: "The full-time equivalent (FTE) for the assignment."
+        data_type: decimal
+      - name: assignment_calendar
+        description: "The calendar associated with the assignment."
+        data_type: decimal
+      - name: assignment_step
+        description: "The step level of the assignment."
+        data_type: int
+      - name: assignment_salary
+        description: "The salary associated with the assignment."
+        data_type: decimal
+      - name: assignment_ppp
+        description: "The PPP value for the assignment."
+        data_type: decimal
+      - name: position_account
+        description: "The account associated with the position."
+        data_type: string
+      - name: position_goal
+        description: "The goal associated with the position."
+        data_type: string
+      - name: position_hr_division
+        description: "The HR division associated with the position."
+        data_type: string
+      - name: notes
+        description: "Additional notes about the assignment."
+        data_type: string
+      - name: assignment_wage
+        description: "The wage associated with the assignment."
+        data_type: decimal
+      - name: assignment_reporting3
+        description: "The reporting level 3 for the assignment."
+        data_type: string
+      - name: _dlt_load_id
+        description: "The unique identifier for the data load."
+        data_type: string
+      - name: _dlt_id
+        description: "The unique identifier for the data record."
+        data_type: string
+
+  - name: stg_position_control_adjustments
+    description: "A staging model for position control adjustment data."
+    columns:
+      - name: adjustment_id
+        description: "The unique identifier for an adjustment and primary key."
+        data_tests:
+          - unique
+          - not_null
+        data_type: string
+        constraints:
+          - type: primary_key
+          - type: not_null
+      - name: adjustment_begin_payroll
+        description: "The beginning payroll date for the adjustment."
+        data_type: date
+      - name: adjustment_end_payroll
+        description: "The ending payroll date for the adjustment."
+        data_type: date
+      - name: assignment_full
+        description: "The full description of the assignment associated with the adjustment."
+        data_type: string
+      - name: adjustment_status
+        description: "The status of the adjustment."
+        data_type: string
+      - name: adjustment_category
+        description: "The category of the adjustment."
+        data_type: string
+      - name: adjustment_description
+        description: "The description of the adjustment."
+        data_type: string
+      - name: adjustment_salary
+        description: "The salary adjustment amount."
+        data_type: decimal
+      - name: adjustment_ppp
+        description: "The PPP value for the adjustment."
+        data_type: decimal
+      - name: adjustment_count
+        description: "The count of adjustments."
+        data_type: int
+      - name: adjustment_total
+        description: "The total value of the adjustment."
+        data_type: decimal
+      - name: notes
+        description: "Additional notes about the adjustment."
+        data_type: string
+      - name: _dlt_load_id
+        description: "The unique identifier for the data load."
+        data_type: string
+      - name: _dlt_id
+        description: "The unique identifier for the data record."
+        data_type: string
+
+  - name: stg_position_control_stipends
+    description: "A staging model for position control stipend data."
+    columns:
+      - name: stipend_id
+        description: "The unique identifier for a stipend and primary key."
+        data_tests:
+          - unique
+          - not_null
+        data_type: string
+        constraints:
+          - type: primary_key
+          - type: not_null
+      - name: employee_id
+        description: "The unique identifier for an employee."
+        data_type: int
+      - name: employee_name
+        description: "The name of the employee."
+        data_type: string
+      - name: stipend_start_date
+        description: "The start date of the stipend."
+        data_type: date
+      - name: stipend_end_date
+        description: "The end date of the stipend."
+        data_type: date
+      - name: stipend_status
+        description: "The status of the stipend."
+        data_type: string
+      - name: stipend_category
+        description: "The category of the stipend."
+        data_type: string
+      - name: stipend_description
+        description: "The description of the stipend."
+        data_type: string
+      - name: stipend_amount
+        description: "The amount of the stipend."
+        data_type: decimal
+      - name: stipend_full_account
+        description: "The full account associated with the stipend."
+        data_type: string
+      - name: stipend_account
+        description: "The account associated with the stipend."
+        data_type: string
+      - name: stipend_full_goal
+        description: "The full goal associated with the stipend."
+        data_type: string
+      - name: stipend_goal
+        description: "The goal associated with the stipend."
+        data_type: string
+      - name: stipend_location
+        description: "The location associated with the stipend."
+        data_type: string
+      - name: stipend_full_resource
+        description: "The full resource associated with the stipend."
+        data_type: string
+      - name: stipend_resource
+        description: "The resource associated with the stipend."
+        data_type: string
+      - name: stipend_start_number
+        description: "The starting number for the stipend."
+        data_type: int
+      - name: stipend_end_number
+        description: "The ending number for the stipend."
+        data_type: int
+      - name: ytd_count
+        description: "The year-to-date count for the stipend."
+        data_type: int
+      - name: ytd_total
+        description: "The year-to-date total for the stipend."
+        data_type: string
+      - name: future_count
+        description: "The future count for the stipend."
+        data_type: int
+      - name: future_total
+        description: "The future total for the stipend."
+        data_type: string
+      - name: stipend_count
+        description: "The count of stipends."
+        data_type: int
+      - name: stipend_total
+        description: "The total value of the stipend."
+        data_type: string
+      - name: _dlt_load_id
+        description: "The unique identifier for the data load."
+        data_type: string
+      - name: _dlt_id
+        description: "The unique identifier for the data record."
+        data_type: string
+      - name: notes
+        description: "Additional notes about the stipend."
         data_type: string
