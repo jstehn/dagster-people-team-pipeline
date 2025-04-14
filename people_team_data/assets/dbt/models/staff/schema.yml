@@ -39,7 +39,7 @@ models:
           - type: primary_key
           - type: not_null
 
-   - name: stg_position_control_employees
+  - name: stg_position_control_employees
     description: "A staging model for position control employee data."
     columns:
       - name: employee_id
