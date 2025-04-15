@@ -29,7 +29,7 @@ paycom as (
         work_email as paycom_email,
         employee_status as paycom_employment_status,
         hire_date as paycom_hire_date,
-        division_desc as paycom_division,
+        division_code as paycom_division,
         position as paycom_position,
         work_location as paycom_location,
         rate_1 as paycom_hourly_rate,
