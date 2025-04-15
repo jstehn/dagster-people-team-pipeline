@@ -12,6 +12,7 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
     - name: The desired column name in snake_case
     - data_type: The DLT data type (text, decimal, bigint, bool, timestamp, date)
     - description: Optional description of the field
+    - pii: (Optional) Boolean indicating if the field contains Personally Identifiable Information. Defaults to False.
     """
     return {
         # Personal Information
@@ -24,21 +25,25 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
             "name": "first_name",
             "data_type": "text",
             "description": "Employee's first name",
+            "pii": True,
         },
         "lastName": {
             "name": "last_name",
             "data_type": "text",
             "description": "Employee's last name",
+            "pii": True,
         },
         "middleName": {
             "name": "middle_name",
             "data_type": "text",
             "description": "Employee's middle name",
+            "pii": True,
         },
         "preferredName": {
             "name": "preferred_name",
             "data_type": "text",
             "description": "Employee's preferred name",
+            "pii": True,
         },
         "gender": {
             "name": "gender",
@@ -57,29 +62,110 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
         },
         "age": {
             "name": "age",
-            "data_type": "integer",
             "description": "Employee's age",
         },
         "dateOfBirth": {
             "name": "date_of_birth",
             "data_type": "date",
             "description": "Employee's date of birth",
+            "pii": True,
+        },
+        "maritalStatus": {
+            "name": "marital_status",
+            "data_type": "text",
+            "description": "Marital Status",
+            "pii": True,
+        },
+        "nationalId": {
+            "name": "national_id",
+            "data_type": "text",
+            "description": "National ID",
+            "pii": True,
+        },
+        "nationality": {
+            "name": "nationality",
+            "data_type": "text",
+            "description": "Nationality",
+            "pii": True,
+        },
+        "citizenship": {
+            "name": "citizenship",
+            "data_type": "text",
+            "description": "Citizenship",
+            "pii": True,
         },
         # Contact Information
         "email": {
             "name": "work_email",
             "data_type": "text",
             "description": "Work email address",
+            "pii": True,
+        },
+        "homeEmail": {
+            "name": "home_email",
+            "data_type": "text",
+            "description": "Home Email",
+            "pii": True,
         },
         "workPhone": {
             "name": "work_phone",
             "data_type": "text",
             "description": "Work phone number",
+            "pii": True,
         },
         "workPhoneExt": {
             "name": "work_phone_ext",
             "data_type": "text",
             "description": "Work phone extension",
+        },
+        "mobilePhone": {
+            "name": "mobile_phone",
+            "data_type": "text",
+            "description": "Mobile Phone",
+            "pii": True,
+        },
+        "homePhone": {
+            "name": "home_phone",
+            "data_type": "text",
+            "description": "Home Phone",
+            "pii": True,
+        },
+        # Address Information
+        "addressLineOne": {
+            "name": "address_line_one",
+            "data_type": "text",
+            "description": "Address line 1",
+            "pii": True,
+        },
+        "addressLineTwo": {
+            "name": "address_line_two",
+            "data_type": "text",
+            "description": "Address line 2",
+            "pii": True,
+        },
+        "city": {
+            "name": "city",
+            "data_type": "text",
+            "description": "City",
+            "pii": True,
+        },
+        "state": {
+            "name": "state",
+            "data_type": "text",
+            "description": "State",
+            "pii": True,
+        },
+        "zipcode": {
+            "name": "zipcode",
+            "data_type": "text",
+            "description": "Zip Code",
+            "pii": True,
+        },
+        "country": {
+            "name": "country",
+            "data_type": "text",
+            "description": "Country",
+            "pii": True,
         },
         # Employment Information
         "employmentStatus": {
@@ -128,6 +214,21 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
             "data_type": "text",
             "description": "Employee's supervisor",
         },
+        "payGroup": {
+            "name": "pay_group",
+            "data_type": "text",
+            "description": "Pay Group",
+        },
+        "flsaCode": {
+            "name": "flsa_code",
+            "data_type": "text",
+            "description": "FLSA Code",
+        },
+        "eeoJobCategory": {
+            "name": "eeo_job_category",
+            "data_type": "text",
+            "description": "EEO Job Category",
+        },
         # Compensation
         "compensationChangeReason": {
             "name": "compensation_change_reason",
@@ -164,6 +265,7 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
             "name": "seid",
             "data_type": "text",
             "description": "SEID (State Educator Identifier)",
+            "pii": True,
         },
         "customField4472": {
             "name": "total_years_edu_service",
@@ -184,11 +286,13 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
             "name": "is_hispanic",
             "data_type": "text",
             "description": "Hispanic/Latino ethnicity indicator",
+            "pii": True,
         },
         "customField4476": {
             "name": "ethnicity_and_race",
             "data_type": "text",
             "description": "Employee's ethnicity and race",
+            "pii": True,
         },
         "customField4477": {
             "name": "school",
@@ -210,10 +314,21 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
             "data_type": "text",
             "description": "Job classification code",
         },
+        "customField4508": {
+            "name": "status_of_employment",
+            "data_type": "text",
+            "description": "CALPADs: Status of Employment ",
+        },
         "customField4509": {
             "name": "non_classroom_assignment",
             "data_type": "text",
             "description": "Non-classroom based job assignment",
+        },
+        "customField4597": {
+            "name": "prior_last_name",
+            "data_type": "text",
+            "description": "Prior Last Name",
+            "pii": True,
         },
         # Education
         "educationCollegeOrInstitution": {
@@ -302,6 +417,7 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
             "name": "credential_document_number",
             "data_type": "text",
             "description": "Credential document number",
+            "pii": True,
         },
         "customTable4558": {
             "name": "credential_additional_auth",

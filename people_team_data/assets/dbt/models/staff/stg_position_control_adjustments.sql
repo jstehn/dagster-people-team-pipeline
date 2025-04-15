@@ -5,29 +5,31 @@
 
 with raw as (
 
-    select 
-        adjustment_begin_payroll as adjustment_begin_payroll,
-        adjustment_end_payroll as adjustment_end_payroll,
-        trim(adjustment_id) as adjustment_id,
-        trim(assignment_full) as assignment_full,
-        trim(adjustment_status) as adjustment_status,
-        trim(adjustment_category) as adjustment_category,
-        trim(adjustment_description) as adjustment_description,
-        cast(adjustment_salary as decimal) as adjustment_salary,
-        cast(adjustmentxx as int) as adjustmentxx,
-        cast(adjustment_ppp as decimal) as adjustment_ppp,
-        trim(assignment_location) as assignment_location,
-        cast(adjustment_count as int) as adjustment_count,
-        cast(adjustment_total as decimal) as adjustment_total,
-        trim(notes) as notes,
-        trim(_dlt_load_id) as _dlt_load_id,
-        trim(_dlt_id) as _dlt_id,
+    select
+        -- Assuming these are date or timestamp strings, adjust format if needed
+        SAFE_CAST(adjustment_begin_payroll as STRING) as adjustment_begin_payroll, -- Or SAFE.PARSE_DATE/TIMESTAMP
+        SAFE_CAST(adjustment_end_payroll as STRING) as adjustment_end_payroll,   -- Or SAFE.PARSE_DATE/TIMESTAMP
+        SAFE_CAST(adjustment_id as STRING) as adjustment_id,
+        SAFE_CAST(assignment_full as STRING) as assignment_full,
+        SAFE_CAST(adjustment_status as STRING) as adjustment_status,
+        SAFE_CAST(adjustment_category as STRING) as adjustment_category,
+        SAFE_CAST(adjustment_description as STRING) as adjustment_description,
+        SAFE_CAST(adjustment_salary as DECIMAL) as adjustment_salary,
+        SAFE_CAST(adjustmentxx as INT64) as adjustmentxx, -- Assuming 'adjustmentxx' is the correct column name
+        SAFE_CAST(adjustment_ppp as DECIMAL) as adjustment_ppp,
+        SAFE_CAST(assignment_location as STRING) as assignment_location,
+        SAFE_CAST(adjustment_count as INT64) as adjustment_count,
+        SAFE_CAST(adjustment_total as DECIMAL) as adjustment_total,
+        SAFE_CAST(notes as STRING) as notes,
+        SAFE_CAST(_dlt_load_id as STRING) as _dlt_load_id, -- Cast dlt columns to STRING
+        SAFE_CAST(_dlt_id as STRING) as _dlt_id
     from {{ source('raw_staff_data', 'raw_position_control_adjustments') }}
     {% if is_incremental() %}
       -- Only process new rows: adjust the filter as needed (using _dlt_load_id or an updated timestamp)
-      where _dlt_load_id > (select max(_dlt_load_id) from {{ this }})
+      -- Ensure the column used for filtering exists and has a comparable type
+      where SAFE_CAST(_dlt_load_id as STRING) > (select max(SAFE_CAST(_dlt_load_id as STRING)) from {{ this }})
     {% endif %}
 )
 
-select * 
+select *
 from raw

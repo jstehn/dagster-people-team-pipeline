@@ -5,19 +5,19 @@ models:
     description: "A staging model for Paycom data"
     columns:
       - name: employee_id
-        description: "The unique identifier for an employee and primary key. Derived from employee_code."
+        description: "The unique identifier for an employee and primary key. Derived from employee_code. Potential PII."
         data_tests:
           - unique
           - not_null
-        data_type: int
+        data_type: int64
         constraints:
           - type: primary_key
           - type: not_null
       - name: legal_firstname
-        description: "The legal first name of the employee."
+        description: "The legal first name of the employee. PII."
         data_type: string
       - name: legal_lastname
-        description: "The legal last name of the employee."
+        description: "The legal last name of the employee. PII."
         data_type: string
       - name: hire_date
         description: "The date the employee was hired."
@@ -35,13 +35,13 @@ models:
           - accepted_values:
               values: ["Terminated", "Active", "On Leave", "Deceased"]
       - name: work_email
-        description: "The work email address of the employee."
+        description: "The work email address of the employee. PII."
         data_type: string
       - name: gender
-        description: "The gender of the employee."
+        description: "The gender of the employee. Potential PII."
         data_type: string
       - name: eeo1_ethnicity
-        description: "The EEO-1 ethnicity category of the employee."
+        description: "The EEO-1 ethnicity category of the employee. Potential PII."
         data_type: string
       - name: salary
         description: "The salary amount for the employee."
@@ -57,7 +57,7 @@ models:
         data_type: numeric
       - name: annual_salary
         description: "The calculated annual salary of the employee."
-        data_type: float
+        data_type: float64
       - name: department
         description: "The department code or name associated with the employee."
         data_type: string
@@ -95,13 +95,13 @@ models:
         description: "The unique identifier for the data record."
         data_type: string
       - name: primary_phone
-        description: "The primary phone number of the employee."
+        description: "The primary phone number of the employee. PII."
         data_type: string
       - name: seid
-        description: "The SEID (Statewide Educator Identifier) of the employee."
-        data_type: int
+        description: "The SEID (Statewide Educator Identifier) of the employee. PII."
+        data_type: string
       - name: ess_eeo1_ethnicity_race
-        description: "The employee self-service reported EEO-1 ethnicity and race."
+        description: "The employee self-service reported EEO-1 ethnicity and race. Potential PII."
         data_type: string
         data_tests:
           - accepted_values:
@@ -113,192 +113,294 @@ models:
         description: "The labor allocation profile associated with the employee."
         data_type: string
       - name: legal_middle_name
-        description: "The legal middle name of the employee."
+        description: "The legal middle name of the employee. PII."
         data_type: string
 
   - name: stg_bamboohr
-    description: "A staging model for BambooHR data"
+    description: "A staging model for BambooHR data, reflecting schema.py"
     columns:
       - name: employee_id
-        description: "The unique identifier for an employee and primary key."
+        description: "Employee identification number. Derived from employee_number. PII."
         data_tests:
           - unique
           - not_null
-        data_type: int
+        data_type: int64
         constraints:
           - type: primary_key
           - type: not_null
       - name: first_name
-        description: "The first name of the employee."
+        description: "Employee's first name. PII."
         data_type: string
       - name: last_name
-        description: "The last name of the employee."
+        description: "Employee's last name. PII."
         data_type: string
       - name: middle_name
-        description: "The middle name of the employee."
+        description: "Employee's middle name. PII."
         data_type: string
       - name: preferred_name
-        description: "The preferred name of the employee."
+        description: "Employee's preferred name. PII."
         data_type: string
       - name: gender
-        description: "The gender of the employee."
+        description: "Employee's gender. Potential PII."
         data_type: string
       - name: gender_identity
-        description: "The gender identity of the employee."
+        description: "Employee's gender identity. Potential PII."
         data_type: string
       - name: employee_pronouns
-        description: "The pronouns used by the employee."
+        description: "Employee's pronouns."
         data_type: string
       - name: age
-        description: "The age of the employee."
-        data_type: int
+        description: "Employee's age."
+        data_type: int64
       - name: date_of_birth
-        description: "The date of birth of the employee."
+        description: "Employee's date of birth. PII."
         data_type: date
-      - name: email
-        description: "The email address of the employee."
+      - name: marital_status
+        description: "Marital Status. PII."
+        data_type: string
+      - name: national_id
+        description: "National ID. PII."
+        data_type: string
+      - name: nationality
+        description: "Nationality. PII."
+        data_type: string
+      - name: citizenship
+        description: "Citizenship. PII."
+        data_type: string
+      - name: work_email
+        description: "Work email address. PII."
+        data_type: string
+      - name: home_email
+        description: "Home Email. PII."
         data_type: string
       - name: work_phone
-        description: "The work phone number of the employee."
-        data_type: int
+        description: "Work phone number. PII."
+        data_type: string
+      - name: work_phone_ext
+        description: "Work phone extension."
+        data_type: string
+      - name: mobile_phone
+        description: "Mobile Phone. PII."
+        data_type: string
+      - name: home_phone
+        description: "Home Phone. PII."
+        data_type: string
+      - name: address_line_one
+        description: "Address line 1. PII."
+        data_type: string
+      - name: address_line_two
+        description: "Address line 2. PII."
+        data_type: string
+      - name: city
+        description: "City. PII."
+        data_type: string
+      - name: state
+        description: "State. PII."
+        data_type: string
+      - name: zipcode
+        description: "Zip Code. PII."
+        data_type: string
+      - name: country
+        description: "Country. PII."
+        data_type: string
       - name: employment_status
-        description: "The employment status of the employee."
+        description: "Current employment status."
         data_type: string
       - name: hire_date
-        description: "The date the employee was hired."
+        description: "Date employee was hired."
+        data_type: date
+      - name: original_hire_date
+        description: "Original hire date if rehired."
         data_type: date
       - name: termination_date
-        description: "The date the employee was terminated."
+        description: "Date of termination if applicable."
         data_type: date
-      - name: job_information_division
-        description: "The division associated with the employee's job."
+      - name: department
+        description: "Employee's department."
         data_type: string
-      - name: job_information_job_title
-        description: "The job title of the employee."
+      - name: division
+        description: "Employee's division."
         data_type: string
-      - name: job_information_location
-        description: "The location associated with the employee's job."
+      - name: job_title
+        description: "Employee's job title."
         data_type: string
-      - name: job_information_reports_to
-        description: "The person the employee reports to."
+      - name: location
+        description: "Employee's work location."
         data_type: string
-      - name: compensation_effective_date
-        description: "The effective date of the employee's compensation."
-        data_type: date
-      - name: compensation_pay_rate
-        description: "The pay rate of the employee."
-        data_type: decimal
-      - name: compensation_pay_type
-        description: "The pay type of the employee (e.g., Salary, Hourly)."
+      - name: reports_to
+        description: "Employee's supervisor."
         data_type: string
-      - name: compensation_pay_schedule
-        description: "The pay schedule of the employee."
+      - name: pay_group
+        description: "Pay Group."
         data_type: string
-      - name: compensation_overtime_status
-        description: "The overtime status of the employee."
+      - name: flsa_code
+        description: "FLSA Code."
+        data_type: string
+      - name: eeo_job_category
+        description: "EEO Job Category."
         data_type: string
       - name: compensation_change_reason
-        description: "The reason for the last compensation change."
+        description: "Reason for compensation change."
         data_type: string
-      - name: years_of_experience_in_role
-        description: "The number of years of experience the employee has in their current role."
-        data_type: int
-      - name: total_years_in_lea
-        description: "The total number of years the employee has worked in the LEA."
-        data_type: int
-      - name: total_years_edu_service
-        description: "The total number of years the employee has worked in education service."
-        data_type: int
-      - name: last_changed
-        description: "The timestamp when the record was last changed."
-        data_type: timestamp
-      - name: is_hispanic
-        description: "Indicates if the employee identifies as Hispanic."
-        data_type: boolean
-      - name: ethnicity_and_race
-        description: "The ethnicity and race of the employee."
-        data_type: string
-      - name: school
-        description: "The school associated with the employee."
-        data_type: string
-      - name: fte
-        description: "The full-time equivalent status of the employee."
+      - name: compensation_effective_date
+        description: "Date when compensation change takes effect."
+        data_type: date
+      - name: pay_rate
+        description: "Employee's pay rate."
         data_type: decimal
-      - name: highest_level_education
-        description: "The highest level of education attained by the employee."
+      - name: pay_type
+        description: "Type of pay (salary, hourly, etc.)."
         data_type: string
-      - name: credential_document_type
-        description: "The type of credential document."
+      - name: pay_schedule
+        description: "Pay schedule frequency."
         data_type: string
-      - name: credential_subject
-        description: "The subject of the credential."
-        data_type: string
-      - name: credential_document_number
-        description: "The document number of the credential."
-        data_type: string
-      - name: credential_term
-        description: "The term of the credential."
-        data_type: string
-      - name: credential_status
-        description: "The status of the credential."
-        data_type: string
-      - name: credential_additional_authorization
-        description: "Any additional authorizations associated with the credential."
-        data_type: string
-      - name: credential_title
-        description: "The title of the credential."
-        data_type: string
-      - name: credential_effective_date
-        description: "The effective date of the credential."
-        data_type: date
-      - name: credential_expiration_date
-        description: "The expiration date of the credential."
-        data_type: date
-      - name: credential_renewal_date
-        description: "The renewal date of the credential."
-        data_type: date
-      - name: job_classification_code
-        description: "The job classification code."
-        data_type: string
-      - name: last_changed_iso
-        description: "The timestamp when the record was last changed in ISO format."
-        data_type: timestamp
-      - name: created_by_user_id
-        description: "The ID of the user who created the record."
-        data_type: string
-      - name: job_information_department
-        description: "The department associated with the employee's job."
+      - name: overtime_status
+        description: "Employee's overtime eligibility status."
         data_type: string
       - name: seid
-        description: "The SEID (Statewide Educator Identifier) of the employee."
-        data_type: int
+        description: "SEID (State Educator Identifier). PII."
+        data_type: string
+      - name: total_years_edu_service
+        description: "Total years of education service."
+        data_type: string
+      - name: total_years_in_lea
+        description: "Total years in this LEA."
+        data_type: string
+      - name: years_of_experience
+        description: "Years of experience (Applicable to Role)."
+        data_type: string
+      - name: is_hispanic
+        description: "Hispanic/Latino ethnicity indicator. PII."
+        data_type: boolean
+      - name: ethnicity_and_race
+        description: "Employee's ethnicity and race. PII."
+        data_type: string
+      - name: school
+        description: "School assignment."
+        data_type: string
+      - name: fte
+        description: "Full-time equivalent value."
+        data_type: decimal
+      - name: highest_education
+        description: "Highest level of education completed."
+        data_type: string
+      - name: job_classification_code
+        description: "Job classification code."
+        data_type: string
+      - name: status_of_employment
+        description: "CALPADs: Status of Employment."
+        data_type: string
+      - name: non_classroom_assignment
+        description: "Non-classroom based job assignment."
+        data_type: string
+      - name: prior_last_name
+        description: "Prior Last Name. PII."
+        data_type: string
+      - name: college
+        description: "Name of college or institution attended."
+        data_type: string
+      - name: degree
+        description: "Degree earned."
+        data_type: string
+      - name: education_start_date
+        description: "Start date of education."
+        data_type: date
+      - name: education_end_date
+        description: "End date of education."
+        data_type: date
+      - name: major
+        description: "Field of study or specialization."
+        data_type: string
+      - name: gpa
+        description: "Grade point average."
+        data_type: decimal
+      - name: training_name
+        description: "Name of completed training."
+        data_type: string
+      - name: training_date
+        description: "Date training was completed."
+        data_type: date
+      - name: training_category
+        description: "Category of training."
+        data_type: string
+      - name: training_notes
+        description: "Notes about completed training."
+        data_type: string
+      - name: credential_effective_date
+        description: "Credential effective date."
+        data_type: date
+      - name: credential_expiration_date
+        description: "Credential expiration date."
+        data_type: date
+      - name: credential_renewal_date
+        description: "Credential renewal date."
+        data_type: date
+      - name: credential_comments
+        description: "Comments about credential."
+        data_type: string
+      - name: credential_title
+        description: "Credential title."
+        data_type: string
+      - name: credential_document_type
+        description: "Type of credential document."
+        data_type: string
+      - name: credential_document_number
+        description: "Credential document number. PII."
+        data_type: string
+      - name: credential_additional_auth
+        description: "Additional authorization details."
+        data_type: string
+      - name: credential_term
+        description: "Credential term."
+        data_type: string
+      - name: credential_subject
+        description: "Credential subject."
+        data_type: string
+      - name: credential_status
+        description: "Credential status."
+        data_type: string
+      - name: last_changed
+        description: "Timestamp of last record update."
+        data_type: timestamp
+      - name: last_changed_iso
+        description: "ISO formatted timestamp of last record update."
+        data_type: timestamp
+      - name: created_by_user_id
+        description: "ID of user who created the record."
+        data_type: string
+      - name: _dlt_load_id
+        description: "The unique identifier for the data load."
+        data_type: string
+      - name: _dlt_id
+        description: "The unique identifier for the data record."
+        data_type: string
 
   - name: stg_position_control_employees
     description: "A staging model for position control employee data."
     columns:
       - name: employee_id
-        description: "The unique identifier for an employee and primary key."
+        description: "The unique identifier for an employee and primary key. PII."
         data_tests:
           - unique
           - not_null
-        data_type: int
+        data_type: int64
         constraints:
           - type: primary_key
           - type: not_null
       - name: employee_first_name
-        description: "The first name of the employee."
+        description: "The first name of the employee. PII."
         data_type: string
       - name: employee_last_name
-        description: "The last name of the employee."
+        description: "The last name of the employee. PII."
         data_type: string
       - name: employee_full_name
-        description: "The full name of the employee (first and last name)."
+        description: "The full name of the employee (first and last name). PII."
         data_type: string
       - name: employee_full
-        description: "The full name of the employee including middle name if available."
+        description: "The full name of the employee including middle name if available. PII."
         data_type: string
       - name: employee_middle_name
-        description: "The middle name of the employee."
+        description: "The middle name of the employee. PII."
         data_type: string
       - name: employee_status
         description: "The employment status of the employee."
@@ -327,7 +429,7 @@ models:
         data_type: boolean
       - name: assignment_count
         description: "The number of assignments for the position."
-        data_type: int
+        data_type: int64
       - name: position_start
         description: "The start date of the position."
         data_type: date
@@ -366,10 +468,10 @@ models:
         data_type: string
       - name: position_start_number
         description: "The starting number for the position."
-        data_type: int
+        data_type: int64
       - name: position_end_number
         description: "The ending number for the position."
-        data_type: int
+        data_type: int64
       - name: _dlt_load_id
         description: "The unique identifier for the data load."
         data_type: string
@@ -394,13 +496,13 @@ models:
           - type: not_null
       - name: assignment_count
         description: "The count of assignments."
-        data_type: int
+        data_type: int64
       - name: employee_id
-        description: "The unique identifier for an employee."
-        data_type: int
+        description: "The unique identifier for an employee. Potential PII."
+        data_type: int64
       - name: employee_count
         description: "The count of employees in the assignment."
-        data_type: int
+        data_type: int64
       - name: assignment_full
         description: "The full description of the assignment."
         data_type: string
@@ -409,10 +511,10 @@ models:
         data_type: string
       - name: assignment_start_number
         description: "The starting number for the assignment."
-        data_type: int
+        data_type: int64
       - name: assignment_end_number
         description: "The ending number for the assignment."
-        data_type: int
+        data_type: int64
       - name: assignment_start
         description: "The start date of the assignment."
         data_type: date
@@ -429,7 +531,7 @@ models:
         description: "The full description of the position."
         data_type: string
       - name: employee_full
-        description: "The full name of the employee."
+        description: "The full name of the employee. Potential PII."
         data_type: string
       - name: assignment_fte
         description: "The full-time equivalent (FTE) for the assignment."
@@ -439,7 +541,7 @@ models:
         data_type: decimal
       - name: assignment_step
         description: "The step level of the assignment."
-        data_type: int
+        data_type: int64
       - name: assignment_salary
         description: "The salary associated with the assignment."
         data_type: decimal
@@ -484,11 +586,11 @@ models:
           - type: primary_key
           - type: not_null
       - name: adjustment_begin_payroll
-        description: "The beginning payroll date for the adjustment."
-        data_type: date
+        description: "The beginning payroll date/identifier for the adjustment."
+        data_type: string
       - name: adjustment_end_payroll
-        description: "The ending payroll date for the adjustment."
-        data_type: date
+        description: "The ending payroll date/identifier for the adjustment."
+        data_type: string
       - name: assignment_full
         description: "The full description of the assignment associated with the adjustment."
         data_type: string
@@ -504,12 +606,18 @@ models:
       - name: adjustment_salary
         description: "The salary adjustment amount."
         data_type: decimal
+      - name: adjustmentxx
+        description: "Placeholder for adjustmentxx column."
+        data_type: int64
       - name: adjustment_ppp
         description: "The PPP value for the adjustment."
         data_type: decimal
+      - name: assignment_location
+        description: "Location associated with the assignment for this adjustment."
+        data_type: string
       - name: adjustment_count
         description: "The count of adjustments."
-        data_type: int
+        data_type: int64
       - name: adjustment_total
         description: "The total value of the adjustment."
         data_type: decimal
@@ -536,10 +644,10 @@ models:
           - type: primary_key
           - type: not_null
       - name: employee_id
-        description: "The unique identifier for an employee."
-        data_type: int
+        description: "The unique identifier for an employee. PII."
+        data_type: int64
       - name: employee_name
-        description: "The name of the employee."
+        description: "The name of the employee. PII."
         data_type: string
       - name: stipend_start_date
         description: "The start date of the stipend."
@@ -582,33 +690,30 @@ models:
         data_type: string
       - name: stipend_start_number
         description: "The starting number for the stipend."
-        data_type: int
+        data_type: int64
       - name: stipend_end_number
         description: "The ending number for the stipend."
-        data_type: int
+        data_type: int64
       - name: ytd_count
         description: "The year-to-date count for the stipend."
-        data_type: int
+        data_type: int64
       - name: ytd_total
         description: "The year-to-date total for the stipend."
-        data_type: string
+        data_type: decimal
       - name: future_count
         description: "The future count for the stipend."
-        data_type: int
+        data_type: int64
       - name: future_total
         description: "The future total for the stipend."
-        data_type: string
+        data_type: decimal
       - name: stipend_count
         description: "The count of stipends."
-        data_type: int
+        data_type: int64
       - name: stipend_total
         description: "The total value of the stipend."
-        data_type: string
-      - name: _dlt_load_id
-        description: "The unique identifier for the data load."
-        data_type: string
-      - name: _dlt_id
-        description: "The unique identifier for the data record."
+        data_type: decimal
+      - name: employee_id__v_text
+        description: "Text representation of employee ID. PII."
         data_type: string
       - name: notes
         description: "Additional notes about the stipend."
@@ -619,7 +724,7 @@ models:
     columns:
       - name: employee_id
         description: "The unique identifier for an employee."
-        data_type: int
+        data_type: int64
       - name: field
         description: "The specific field where a difference was detected (e.g., 'first_name', 'hire_date')."
         data_type: string

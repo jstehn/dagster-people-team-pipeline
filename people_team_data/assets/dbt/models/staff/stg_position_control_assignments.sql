@@ -5,40 +5,40 @@
 
 with raw as (
 
-    select 
-        trim(assignment_id) as assignment_id,
-        cast(assignment_count as int) as assignment_count,
-        cast(employee_id as int) as employee_id,
-        cast(employee_count as int) as employee_count,
-        trim(assignment_full) as assignment_full,
-        trim(assignment_scale) as assignment_scale,
-        cast(assignment_start_number as int) as assignment_start_number,
-        cast(assignment_end_number as int) as assignment_end_number,
-        trim(_dlt_load_id) as _dlt_load_id,
-        trim(_dlt_id) as _dlt_id,
-        cast(assignment_start as date) as assignment_start,
-        cast(assignment_end as date) as assignment_end,
-        trim(assignment_status) as assignment_status,
-        trim(position_id) as position_id,
-        trim(position_full) as position_full,
-        trim(employee_full) as employee_full,
-        cast(assignment_fte as decimal) as assignment_fte,
-        cast(assignment_calendar as decimal) as assignment_calendar,
-        cast(assignment_step as int) as assignment_step,
-        cast(assignment_salary as decimal) as assignment_salary,
-        cast(assignment_ppp as decimal) as assignment_ppp,
-        trim(position_account) as position_account,
-        trim(position_goal) as position_goal,
-        trim(position_hr_division) as position_hr_division,
-        trim(notes) as notes,
-        cast(assignment_wage as decimal) as assignment_wage,
-        trim(assignment_reporting3) as assignment_reporting3
+    select
+        SAFE_CAST(assignment_id as STRING) as assignment_id,
+        SAFE_CAST(assignment_count as INT64) as assignment_count,
+        SAFE_CAST(employee_id as INT64) as employee_id, -- Potential PII
+        SAFE_CAST(employee_count as INT64) as employee_count,
+        SAFE_CAST(assignment_full as STRING) as assignment_full,
+        SAFE_CAST(assignment_scale as STRING) as assignment_scale,
+        SAFE_CAST(assignment_start_number as INT64) as assignment_start_number,
+        SAFE_CAST(assignment_end_number as INT64) as assignment_end_number,
+        SAFE_CAST(_dlt_load_id as STRING) as _dlt_load_id,
+        SAFE_CAST(_dlt_id as STRING) as _dlt_id,
+        SAFE_CAST(assignment_start as DATE) as assignment_start, -- Changed from PARSE_DATE
+        SAFE_CAST(assignment_end as DATE) as assignment_end,     -- Changed from PARSE_DATE
+        SAFE_CAST(assignment_status as STRING) as assignment_status,
+        SAFE_CAST(position_id as STRING) as position_id,
+        SAFE_CAST(position_full as STRING) as position_full,
+        SAFE_CAST(employee_full as STRING) as employee_full, -- Potential PII
+        SAFE_CAST(assignment_fte as DECIMAL) as assignment_fte,
+        SAFE_CAST(assignment_calendar as DECIMAL) as assignment_calendar, -- Assuming DECIMAL, adjust if INT64
+        SAFE_CAST(assignment_step as INT64) as assignment_step,
+        SAFE_CAST(assignment_salary as DECIMAL) as assignment_salary,
+        SAFE_CAST(assignment_ppp as DECIMAL) as assignment_ppp,
+        SAFE_CAST(position_account as STRING) as position_account,
+        SAFE_CAST(position_goal as STRING) as position_goal,
+        SAFE_CAST(position_hr_division as STRING) as position_hr_division,
+        SAFE_CAST(notes as STRING) as notes,
+        SAFE_CAST(assignment_wage as DECIMAL) as assignment_wage,
+        SAFE_CAST(assignment_reporting3 as STRING) as assignment_reporting3
     from {{ source('raw_staff_data', 'raw_position_control_assignments') }}
     {% if is_incremental() %}
       -- Only process new rows: adjust the filter as needed (using _dlt_load_id or an updated timestamp)
-      where _dlt_load_id > (select max(_dlt_load_id) from {{ this }})
+      where SAFE_CAST(_dlt_load_id as STRING) > (select max(SAFE_CAST(_dlt_load_id as STRING)) from {{ this }})
     {% endif %}
 )
 
-select * 
+select *
 from raw
