@@ -5,6 +5,7 @@ from dagster import (
     AssetKey,
     Definitions,
     EnvVar,
+    define_asset_job,
     load_assets_from_modules,
 )
 from dagster_dbt import DbtCliResource, DbtProject, dbt_assets
@@ -33,6 +34,7 @@ def dbt_models(context: AssetExecutionContext, dbt: DbtCliResource):
 
 # 4. Load all other assets
 all_assets = load_assets_from_modules([assets])
+all_assets_job = define_asset_job(name="all_assets_job")
 
 # 5. Get environment resources
 env = EnvVar("ENV").get_value()
@@ -40,6 +42,9 @@ env_resources = resources.get_environment_resources(env)
 # 6. Create definitions object
 defs = Definitions(
     assets=[*all_assets, dbt_models],  # Include dbt assets here
+    jobs=[all_assets_job],
+    schedules=[],
+    sensors=[],
     resources={
         **env_resources,
     },
