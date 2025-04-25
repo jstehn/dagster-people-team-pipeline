@@ -737,3 +737,99 @@ models:
       - name: position_control_value
         description: "The value of the field from the Position Control system (if applicable)."
         data_type: string
+
+  - name: mrt_employee
+    description: "A consolidated employee model combining data from BambooHR, Paycom, and Position Control systems."
+    columns:
+      - name: employee_id
+        description: "The unique identifier for an employee."
+        data_tests:
+          - not_null
+        data_type: int64
+      - name: first_name
+        description: "The first name of the employee. PII."
+        data_type: string
+      - name: last_name
+        description: "The last name of the employee. PII."
+        data_type: string
+      - name: middle_name
+        description: "The middle name of the employee. PII."
+        data_type: string
+      - name: preferred_name
+        description: "The preferred name of the employee. PII."
+        data_type: string
+      - name: email_address
+        description: "The work email address of the employee. PII."
+        data_type: string
+      - name: gender
+        description: "The gender of the employee. Potential PII."
+        data_type: string
+      - name: school
+        description: "The school assignment of the employee."
+        data_type: string
+      - name: fte
+        description: "The full-time equivalent (FTE) value for the employee."
+        data_type: decimal
+      - name: location
+        description: "The work location of the employee."
+        data_type: string
+      - name: seid
+        description: "The SEID (Statewide Educator Identifier) of the employee. PII."
+        data_type: string
+      - name: position_id
+        description: "The unique identifier for the employee's position."
+        data_type: string
+      - name: assignment_id
+        description: "The unique identifier for the employee's assignment."
+        data_type: string
+      - name: employment_status
+        description: "The employment status of the employee."
+        data_type: string
+      - name: hire_date
+        description: "The date the employee was hired."
+        data_type: date
+      - name: termination_date
+        description: "The date the employee was terminated, if applicable."
+        data_type: date
+      - name: ethnicity_and_race
+        description: "The ethnicity and race of the employee. PII."
+        data_type: string
+      - name: total_years_edu_service
+        description: "The total years of education service for the employee."
+        data_type: string
+      - name: total_years_in_lea
+        description: "The total years the employee has been in the LEA."
+        data_type: string
+      - name: years_of_experience_in_role
+        description: "The years of experience the employee has in their role."
+        data_type: string
+      - name: pay_type
+        description: "The type of pay the employee receives (e.g., Salary, Hourly)."
+        data_type: string
+      - name: annual_salary
+        description: "The annual salary of the employee."
+        data_type: decimal
+      - name: hourly_rate
+        description: "The hourly rate of the employee."
+        data_type: decimal
+      - name: date_of_birth
+        description: "The date of birth of the employee. PII."
+        data_type: date
+      - name: department
+        description: "The department associated with the employee."
+        data_type: string
+      - name: sub_department_code
+        description: "The sub-department code associated with the employee."
+        data_type: string
+      - name: department_desc
+        description: "The description of the employee's department."
+        data_type: string
+      - name: sub_department_desc
+        description: "The description of the employee's sub-department."
+        data_type: string
+      - name: position_name
+        description: "The name of the employee's position."
+        data_type: string
+      - name: reports_to
+        description: "The employee's supervisor."
+        data_type: string
