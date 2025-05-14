@@ -31,7 +31,7 @@ setup(
         "dagster-webserver",
         "dbt",
         "dbt-bigquery",
-        "dbt-postgress",
+        "dbt-postgres",
         "dbt-python",
         "duckdbdbt",
         "dlt[bigquery,filesystem,sqlalchemy,duckdb,postgres]",
