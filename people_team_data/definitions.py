@@ -1,19 +1,3 @@
-import os
-import pathlib
-
-# Get the current working directory
-cwd = os.getcwd()
-print(f"--- CWD when definitions.py is loaded: {cwd}")
-
-# You can also print the absolute path of the definitions.py file itself for reference
-definitions_file_path = pathlib.Path(__file__).resolve()
-print(f"--- Absolute path of definitions.py: {definitions_file_path}")
-print(f"--- Parent directory of definitions.py: {definitions_file_path.parent}")
-
-raise Exception(
-    f"--- Absolute path of definitions.py: {definitions_file_path}\n--- Parent directory of definitions.py: {definitions_file_path.parent}\n--- CWD when definitions.py is loaded: {cwd}"
-)
-
 from dagster import (
     AssetExecutionContext,
     Definitions,
