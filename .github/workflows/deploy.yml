@@ -15,8 +15,6 @@ env:
   ENABLE_FAST_DEPLOYS: 'true'
   PYTHON_VERSION: '3.10'
   DAGSTER_CLOUD_FILE: 'dagster_cloud.yaml'
-  BAMBOOHR_API_KEY: ${{ secrets.BAMBOOHR_API_KEY }}
-  BAMBOOHR_API_COMPANY_DOMAIN: ${{ secrets.BAMBOOHR_API_COMPANY_DOMAIN }}
 
 jobs:
   dagster_cloud_default_deploy:
