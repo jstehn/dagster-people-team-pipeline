@@ -40,7 +40,7 @@ setup(
         "isort",
         "pandas",
         "psutil",
-        "psycopg2",
+        "psycopg2-binary",
         "pydantic",
         "requests",
         "streamlit",
