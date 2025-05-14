@@ -38,6 +38,7 @@ setup(
         "google-api-python-client",
         "gspread",
         "isort",
+        "libpq-dev",
         "pandas",
         "psutil",
         "psycopg2",
