@@ -16,8 +16,7 @@ dbt
 dbt-bigquery
 dbt-postgres
 dbt-python
-dlt[bigquery,filesystem,sqlalchemy,duckdb,postgres]
-duckdb
+dlt[bigquery,filesystem,sqlalchemy,postgres]
 google-cloud-bigquery-storage
 google-api-python-client
 gspread
