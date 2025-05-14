@@ -16,36 +16,20 @@ def postgres_db(context: InitResourceContext):
     return engine
 
 
-def get_environment_resources(env: str):
+def get_environment_resources():
     base_resources = {
         "dbt": DbtCliResource(
             project_dir=EnvVar("DBT_PROJECT_DIR").get_value(),
-            target=env,
         ),
         "dlt": DagsterDltResource(),
     }
 
-    if env == "dev":
-        return {**base_resources, "lake": None, "warehouse": postgres_db}
-    elif env == "stage":
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = EnvVar(
-            "GCP_CREDS_STAGE"
-        ).get_value()
-        gcs_config = {"project": EnvVar("GCP_PROJECT_STAGE"), "dataset": "prod"}
-        return {
-            **base_resources,
-            "lake": GCSResource(bucket="pipeline_data_raw", **gcs_config),
-            "warehouse": BigQueryResource(**gcs_config),
-        }
-    elif env == "prod":
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = EnvVar(
-            "GCP_CREDS"
-        ).get_value()
-        gcs_config = {"project": EnvVar("GCP_PROJECT"), "dataset": "prod"}
-        return {
-            **base_resources,
-            "lake": GCSResource(bucket="pipeline_data_raw", **gcs_config),
-            "warehouse": BigQueryResource(**gcs_config),
-        }
-    else:
-        raise ValueError(f"Unknown environment: {env}")
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = EnvVar(
+        "GCP_CREDS"
+    ).get_value()
+    gcs_config = {"project": EnvVar("GCP_PROJECT"), "dataset": "prod"}
+    return {
+        **base_resources,
+        "lake": GCSResource(bucket="pipeline_data_raw", **gcs_config),
+        "warehouse": BigQueryResource(**gcs_config),
+    }

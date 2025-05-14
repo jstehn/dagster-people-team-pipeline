@@ -107,8 +107,8 @@ def process_batch_with_retry(
 
 @dlt.source
 def bamboohr_source(
-    api_key: str = dlt.secrets.value,
-    company_domain: str = dlt.secrets.value,
+    bamboohr_api_key: str = dlt.secrets.value,
+    bamboohr_company_domain: str = dlt.secrets.value,
 ):
     """
     DLT source for BambooHR API.
@@ -121,7 +121,8 @@ def bamboohr_source(
         dlt.Source: DLT source object.
     """
     logging.debug(
-        "Initializing BambooHR source with company domain: %s", company_domain
+        "Initializing BambooHR source with company domain: %s",
+        bamboohr_company_domain,
     )
 
     # Get fields from schema
@@ -162,8 +163,8 @@ def bamboohr_source(
 
             config: RESTAPIConfig = {
                 "client": {
-                    "base_url": f"https://api.bamboohr.com/api/gateway.php/{company_domain}/v1/",
-                    "auth": HttpBasicAuth(api_key, "x"),
+                    "base_url": f"https://api.bamboohr.com/api/gateway.php/{bamboohr_company_domain}/v1/",
+                    "auth": HttpBasicAuth(bamboohr_api_key, "x"),
                 },
                 "resource_defaults": {
                     "primary_key": "employeeNumber",

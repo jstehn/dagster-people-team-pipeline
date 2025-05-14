@@ -1,8 +1,5 @@
-from pathlib import Path
-
 from dagster import (
     AssetExecutionContext,
-    AssetKey,
     Definitions,
     EnvVar,
     define_asset_job,
@@ -37,8 +34,7 @@ all_assets = load_assets_from_modules([assets])
 all_assets_job = define_asset_job(name="all_assets_job")
 
 # 5. Get environment resources
-env = EnvVar("ENV").get_value()
-env_resources = resources.get_environment_resources(env)
+env_resources = resources.get_environment_resources()
 # 6. Create definitions object
 defs = Definitions(
     assets=[*all_assets, dbt_models],  # Include dbt assets here
