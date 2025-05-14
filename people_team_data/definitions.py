@@ -24,11 +24,11 @@ print(
 DBT_TARGET_CONFIG = {
     "type": EnvVar(
         "DBT_PROFILE_TYPE"
-    ).getValue(),  # e.g., "bigquery", "postgres", "snowflake"
-    "threads": EnvVar.int("DBT_THREADS").getValue(
+    ).get_value(),  # e.g., "bigquery", "postgres", "snowflake"
+    "threads": EnvVar.int("DBT_THREADS").get_value(
         default=4
     ),  # Default to 4 threads if not set
-    "retries": EnvVar.int("DBT_RETRIES").getValue(
+    "retries": EnvVar.int("DBT_RETRIES").get_value(
         default=1
     ),  # Optional: default retries
     # Add other common dbt profile parameters if needed
@@ -36,23 +36,23 @@ DBT_TARGET_CONFIG = {
 
 # Populate connection-specific details based on the DBT_PROFILE_TYPE
 # This logic helps keep your Dagster Cloud environment variables clean and specific.
-profile_type = EnvVar("DBT_PROFILE_TYPE").getValue()
+profile_type = EnvVar("DBT_PROFILE_TYPE").get_value()
 
 if profile_type == "bigquery":
     DBT_TARGET_CONFIG.update(
         {
             "project": EnvVar(
                 "GCP_PROJECT"
-            ).getValue(),  # Your Google Cloud Project ID
+            ).get_value(),  # Your Google Cloud Project ID
             "dataset": EnvVar(
                 "GCP_DATASET"
-            ).getValue(),  # Your default BigQuery dataset for dbt
-            "location": EnvVar("BQ_LOCATION").getValue(
+            ).get_value(),  # Your default BigQuery dataset for dbt
+            "location": EnvVar("BQ_LOCATION").get_value(
                 default="us-west1"
             ),  # Optional: e.g., "US"
             "keyfile_json": EnvVar(
                 "GCP_CREDS"
-            ).getValue(),  # JSON content of your service account key
+            ).get_value(),  # JSON content of your service account key
             # Store this as a multi-line secret in Dagster Cloud
             # Add any other BigQuery specific parameters: method, priority, etc.
         }
@@ -60,14 +60,14 @@ if profile_type == "bigquery":
 elif profile_type == "postgres":
     DBT_TARGET_CONFIG.update(
         {
-            "host": EnvVar("DBT_PG_HOST").getValue(),
-            "user": EnvVar("DBT_PG_USER").getValue(),
-            "password": EnvVar("DBT_PG_PASSWORD").getValue(),
-            "port": EnvVar.int("DBT_PG_PORT").getValue(),
-            "dbname": EnvVar("DBT_PG_DBNAME").getValue(),
+            "host": EnvVar("DBT_PG_HOST").get_value(),
+            "user": EnvVar("DBT_PG_USER").get_value(),
+            "password": EnvVar("DBT_PG_PASSWORD").get_value(),
+            "port": EnvVar.int("DBT_PG_PORT").get_value(),
+            "dbname": EnvVar("DBT_PG_DBNAME").get_value(),
             "schema": EnvVar(
                 "DBT_PG_SCHEMA"
-            ).getValue(),  # This is your dbt target schema
+            ).get_value(),  # This is your dbt target schema
         }
     )
 # Add elif blocks for other database types (snowflake, redshift, etc.) as needed
@@ -77,7 +77,7 @@ dbt_project = DbtProject(
     project_dir=dbt_project_path,
     target_config=DBT_TARGET_CONFIG,
     # Optionally, specify the dbt target name if not using the default or if you want to be explicit
-    # target=EnvVar("DBT_TARGET_NAME").getValue(default="prod")
+    # target=EnvVar("DBT_TARGET_NAME").get_value(default="prod")
 )
 
 # 4. Prepare dbt project if dev (this will now use the configured target_config)
