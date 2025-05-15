@@ -29,7 +29,7 @@ setup(
         "dagster-pipes",
         "dagster-postgres",
         "dagster-webserver",
-        "dbt >= 1.9.0",
+        "dbt-core >= 1.9.0",
         "dbt-bigquery",
         "dbt-postgres",
         "dbt-python",
