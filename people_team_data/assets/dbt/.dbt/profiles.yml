@@ -11,4 +11,4 @@ default:
       project: '{{ env_var(''GCP_PROJECT'') }}'
       threads: 4
       type: bigquery
-  target: '{{ env_var("DBT_TARGET") }}'
+  target: 'staff'
