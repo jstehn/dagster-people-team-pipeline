@@ -63,43 +63,60 @@ jobs:
         # This installs tools needed for the next step, not necessarily for the final PEX,
         # though dagster-dbt (library) should be in your project dependencies if used at runtime.
 
-      - name: Prepare dbt project for packaging
+      - name: Debug and Prepare dbt project
         if: steps.prerun.outputs.result == 'pex-deploy'
         id: prepare_dbt
-        # This command must run in the directory that contains your dbt_project.yml
-        # and the Python file specified by --file.
-        # We assume env.DBT_PROJECT_DIR is this directory's name, relative to the repo root.
-        # And the Python file defining DbtProject is named {{ env.DBT_PROJECT_DIR }}.py inside this directory.
-        working-directory: ${{ github.workspace }}/project-repo/${{ env.DBT_PROJECT_DIR }}
+        # Explicitly pull repository variables into the step's environment
+        # using the 'vars' context. Fall back to 'env' just in case.
+        env:
+          # This creates shell environment variables for this step based on GitHub Actions contexts
+          EFFECTIVE_DBT_PROJECT_DIR: ${{ vars.DBT_PROJECT_DIR || env.DBT_PROJECT_DIR }}
+          EFFECTIVE_DBT_PROFILES_DIR: ${{ vars.DBT_PROFILES_DIR || env.DBT_PROFILES_DIR }}
+        # The working-directory now uses the variable defined directly in this step's env block
+        working-directory: ${{ github.workspace }}/project-repo/${{ env.EFFECTIVE_DBT_PROJECT_DIR }}
         run: |
-          echo "Current directory: $(pwd)"
-          echo "Listing files: $(ls -la)"
-          echo "Attempting to prepare dbt project using file: ${{ env.DBT_PROJECT_DIR }}/project.py"
-          dagster-dbt project prepare-and-package --file ${{ env.DBT_PROJECT_DIR }}/project.py
+          echo "--- Debugging GitHub Actions Contexts ---"
+          echo "1. Value from repository 'vars.DBT_PROJECT_DIR': [${{ vars.DBT_PROJECT_DIR }}]"
+          echo "2. Value from general 'env.DBT_PROJECT_DIR' (might be empty if not propagated): [${{ env.DBT_PROJECT_DIR }}]"
+          echo "3. EFFECTIVE_DBT_PROJECT_DIR for this step (should be populated): [${{ env.EFFECTIVE_DBT_PROJECT_DIR }}]"
+          echo "4. Value from repository 'vars.DBT_PROFILES_DIR': [${{ vars.DBT_PROFILES_DIR }}]"
+          echo "5. EFFECTIVE_DBT_PROFILES_DIR for this step (should be populated): [${{ env.EFFECTIVE_DBT_PROFILES_DIR }}]"
+          echo "--- End Debugging ---"
 
-          # The 'prepare-and-package' command creates a .env file in the current working directory
-          # (which is $GITHUB_WORKSPACE/project-repo/${{ env.DBT_PROJECT_DIR }})
-          # This .env file contains DAGSTER_DBT_TEMPORARY_PROJECT_DIR.
-          # We need to export this variable so the subsequent PEX build step can use it.
+          # Critical check: Ensure EFFECTIVE_DBT_PROJECT_DIR is not empty
+          # Note: Inside the shell script, access it as $EFFECTIVE_DBT_PROJECT_DIR (or $EFFECTIVE_DBT_PROJECT_DIR)
+          # The ${{ env.EFFECTIVE_DBT_PROJECT_DIR }} above is for GitHub Actions to pre-process the string.
+          # Here, we use shell syntax to check the variable that was set for the shell.
+          if [ -z "$EFFECTIVE_DBT_PROJECT_DIR" ]; then
+            echo "Error: EFFECTIVE_DBT_PROJECT_DIR is empty. Check repository variable DBT_PROJECT_DIR and workflow setup."
+            exit 1
+          fi
+          # Also good to check DBT_PROFILES_DIR if it's critical for dbt parse
+          if [ -z "$EFFECTIVE_DBT_PROFILES_DIR" ]; then
+            echo "Warning: EFFECTIVE_DBT_PROFILES_DIR is empty. dbt might use default profiles dir."
+            # Depending on your setup, you might want to exit 1 here too.
+          fi
+
+          echo "Current directory: $(pwd)"
+          echo "Listing files in current directory (this should be your dbt project dir: project-repo/${EFFECTIVE_DBT_PROJECT_DIR}):"
+          ls -la
+
+          echo "Attempting to prepare dbt project using file: project.py (relative to current directory)"
+          # This assumes 'project.py' and 'dbt_project.yml' are directly in EFFECTIVE_DBT_PROJECT_DIR
+          # The DBT_PROFILES_DIR for dbt to use is $EFFECTIVE_DBT_PROFILES_DIR (set as env var for the shell)
+          dagster-dbt project prepare-and-package --file project.py
+
+          # --- .env file handling ---
           if [ -f .env ]; then
             echo "Found .env file. Contents:"
             cat .env
-            # Source the .env file to make its variables available to $GITHUB_ENV
-            # Use a more robust way to extract the variable to avoid issues with special characters
             DAGSTER_DBT_TEMP_DIR_VALUE=$(grep DAGSTER_DBT_TEMPORARY_PROJECT_DIR .env | cut -d '=' -f2-)
             echo "DAGSTER_DBT_TEMPORARY_PROJECT_DIR=${DAGSTER_DBT_TEMP_DIR_VALUE}" >> $GITHUB_ENV
             echo "Exported DAGSTER_DBT_TEMPORARY_PROJECT_DIR to GITHUB_ENV"
           else
             echo "Error: .env file not found after running dagster-dbt project prepare-and-package."
-            # Consider failing the job if this file is critical and not found:
-            # exit 1
+            exit 1
           fi
-        env:
-          # Pass through any other env vars that dbt might need for compilation, if any.
-          # For example, if your dbt profiles.yml relies on env vars for credentials:
-          # DBT_ENV_SECRET_USER: ${{ secrets.DBT_USER }} # Example
-          # Note: DAGSTER_CLOUD_API_TOKEN is unlikely to be needed by dbt compilation itself.
-          DBT_PROJECT_DIR_NAME: ${{ env.DBT_PROJECT_DIR }} # Making it available if scripts within need it
 
       - name: Python Executable Deploy
         if: steps.prerun.outputs.result == 'pex-deploy'
