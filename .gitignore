@@ -20,3 +20,4 @@ people_team_data/.logs_queue
 .dlt/secrets.toml
 scratch*
 *logs
+*keyfile.json
