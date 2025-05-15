@@ -74,8 +74,8 @@ jobs:
         run: |
           echo "Current directory: $(pwd)"
           echo "Listing files: $(ls -la)"
-          echo "Attempting to prepare dbt project using file: ${{ env.DBT_PROJECT_DIR }}.py"
-          dagster-dbt project prepare-and-package --file ${{ env.DBT_PROJECT_DIR }}.py
+          echo "Attempting to prepare dbt project using file: ${{ env.DBT_PROJECT_DIR }}/project.py"
+          dagster-dbt project prepare-and-package --file ${{ env.DBT_PROJECT_DIR }}/project.py
 
           # The 'prepare-and-package' command creates a .env file in the current working directory
           # (which is $GITHUB_WORKSPACE/project-repo/${{ env.DBT_PROJECT_DIR }})
