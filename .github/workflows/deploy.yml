@@ -44,6 +44,9 @@ jobs:
 
       - name: Prepare DBT project for deployment
         if: steps.prerun.outputs.result == 'pex-deploy'
+        env:
+          GCP_CREDS: ${{ secrets.GCP_CREDS }}
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
         run: |
           python -m pip install pip --upgrade
           cd project-repo
