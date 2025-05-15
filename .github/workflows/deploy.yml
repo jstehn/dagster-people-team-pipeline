@@ -101,18 +101,6 @@ jobs:
           # The DBT_PROFILES_DIR for dbt to use is $EFFECTIVE_DBT_PROFILES_DIR (set as env var for the shell)
           dagster-dbt project prepare-and-package --file project.py
 
-          # --- .env file handling ---
-          if [ -f .env ]; then
-            echo "Found .env file. Contents:"
-            cat .env
-            DAGSTER_DBT_TEMP_DIR_VALUE=$(grep DAGSTER_DBT_TEMPORARY_PROJECT_DIR .env | cut -d '=' -f2-)
-            echo "DAGSTER_DBT_TEMPORARY_PROJECT_DIR=${DAGSTER_DBT_TEMP_DIR_VALUE}" >> $GITHUB_ENV
-            echo "Exported DAGSTER_DBT_TEMPORARY_PROJECT_DIR to GITHUB_ENV"
-          else
-            echo "Error: .env file not found after running dagster-dbt project prepare-and-package."
-            exit 1
-          fi
-
       - name: Python Executable Deploy
         if: steps.prerun.outputs.result == 'pex-deploy'
         uses: dagster-io/dagster-cloud-action/actions/build_deploy_python_executable@v0.1
@@ -121,11 +109,7 @@ jobs:
           build_output_dir: "${{ github.workspace }}/build"
           python_version: "${{ env.PYTHON_VERSION }}"
         env:
-          # GITHUB_TOKEN is used by the action for releases if applicable.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # DAGSTER_DBT_TEMPORARY_PROJECT_DIR will be automatically available here
-          # because we added it to $GITHUB_ENV in the previous step.
-          # This allows your DbtProject definition in Python to find the packaged dbt project.
 
   dagster_cloud_docker_deploy:
     name: Docker Deploy
