@@ -12,9 +12,9 @@ concurrency:
 env:
   DAGSTER_CLOUD_URL: "http://caliberpublicschools.dagster.cloud"
   DAGSTER_CLOUD_API_TOKEN: ${{ secrets.DAGSTER_CLOUD_API_TOKEN }}
-  ENABLE_FAST_DEPLOYS: 'true'
-  PYTHON_VERSION: '3.10'
-  DAGSTER_CLOUD_FILE: 'dagster_cloud.yaml'
+  ENABLE_FAST_DEPLOYS: "true"
+  PYTHON_VERSION: "3.10"
+  DAGSTER_CLOUD_FILE: "dagster_cloud.yaml"
 
 jobs:
   dagster_cloud_default_deploy:
@@ -39,18 +39,81 @@ jobs:
         if: steps.prerun.outputs.result == 'pex-deploy'
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref }} # Or github.sha for specific commit
           path: project-repo
+
+      - name: Set up Python for PEX build
+        if: steps.prerun.outputs.result == 'pex-deploy'
+        uses: actions/setup-python@v5 # Using a more recent version
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dbt and dagster-dbt for packaging
+        if: steps.prerun.outputs.result == 'pex-deploy'
+        run: |
+          pip install dagster-dbt
+          # IMPORTANT: Install your specific dbt adapter below!
+          # For example, if you use dbt with PostgreSQL:
+          # pip install dbt-postgres
+          # Or for Snowflake:
+          # pip install dbt-snowflake
+          # Or for BigQuery:
+          # pip install dbt-bigquery
+          echo "Please ensure your dbt adapter (e.g., dbt-postgres, dbt-snowflake) is installed here."
+        # This installs tools needed for the next step, not necessarily for the final PEX,
+        # though dagster-dbt (library) should be in your project dependencies if used at runtime.
+
+      - name: Prepare dbt project for packaging
+        if: steps.prerun.outputs.result == 'pex-deploy'
+        id: prepare_dbt
+        # This command must run in the directory that contains your dbt_project.yml
+        # and the Python file specified by --file.
+        # We assume env.DBT_PROJECT_DIR is this directory's name, relative to the repo root.
+        # And the Python file defining DbtProject is named {{ env.DBT_PROJECT_DIR }}.py inside this directory.
+        working-directory: ${{ github.workspace }}/project-repo/${{ env.DBT_PROJECT_DIR }}
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Listing files: $(ls -la)"
+          echo "Attempting to prepare dbt project using file: ${{ env.DBT_PROJECT_DIR }}.py"
+          dagster-dbt project prepare-and-package --file ${{ env.DBT_PROJECT_DIR }}.py
+
+          # The 'prepare-and-package' command creates a .env file in the current working directory
+          # (which is $GITHUB_WORKSPACE/project-repo/${{ env.DBT_PROJECT_DIR }})
+          # This .env file contains DAGSTER_DBT_TEMPORARY_PROJECT_DIR.
+          # We need to export this variable so the subsequent PEX build step can use it.
+          if [ -f .env ]; then
+            echo "Found .env file. Contents:"
+            cat .env
+            # Source the .env file to make its variables available to $GITHUB_ENV
+            # Use a more robust way to extract the variable to avoid issues with special characters
+            DAGSTER_DBT_TEMP_DIR_VALUE=$(grep DAGSTER_DBT_TEMPORARY_PROJECT_DIR .env | cut -d '=' -f2-)
+            echo "DAGSTER_DBT_TEMPORARY_PROJECT_DIR=${DAGSTER_DBT_TEMP_DIR_VALUE}" >> $GITHUB_ENV
+            echo "Exported DAGSTER_DBT_TEMPORARY_PROJECT_DIR to GITHUB_ENV"
+          else
+            echo "Error: .env file not found after running dagster-dbt project prepare-and-package."
+            # Consider failing the job if this file is critical and not found:
+            # exit 1
+          fi
+        env:
+          # Pass through any other env vars that dbt might need for compilation, if any.
+          # For example, if your dbt profiles.yml relies on env vars for credentials:
+          # DBT_ENV_SECRET_USER: ${{ secrets.DBT_USER }} # Example
+          # Note: DAGSTER_CLOUD_API_TOKEN is unlikely to be needed by dbt compilation itself.
+          DBT_PROJECT_DIR_NAME: ${{ env.DBT_PROJECT_DIR }} # Making it available if scripts within need it
 
       - name: Python Executable Deploy
         if: steps.prerun.outputs.result == 'pex-deploy'
         uses: dagster-io/dagster-cloud-action/actions/build_deploy_python_executable@v0.1
         with:
-          dagster_cloud_file: "$GITHUB_WORKSPACE/project-repo/$DAGSTER_CLOUD_FILE"
-          build_output_dir: "$GITHUB_WORKSPACE/build"
+          dagster_cloud_file: "${{ github.workspace }}/project-repo/${{ env.DAGSTER_CLOUD_FILE }}"
+          build_output_dir: "${{ github.workspace }}/build"
           python_version: "${{ env.PYTHON_VERSION }}"
         env:
+          # GITHUB_TOKEN is used by the action for releases if applicable.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # DAGSTER_DBT_TEMPORARY_PROJECT_DIR will be automatically available here
+          # because we added it to $GITHUB_ENV in the previous step.
+          # This allows your DbtProject definition in Python to find the packaged dbt project.
 
   dagster_cloud_docker_deploy:
     name: Docker Deploy
