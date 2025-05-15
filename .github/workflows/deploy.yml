@@ -51,14 +51,7 @@ jobs:
       - name: Install dbt and dagster-dbt for packaging
         if: steps.prerun.outputs.result == 'pex-deploy'
         run: |
-          pip install dagster-dbt
-          # IMPORTANT: Install your specific dbt adapter below!
-          # For example, if you use dbt with PostgreSQL:
-          # pip install dbt-postgres
-          # Or for Snowflake:
-          # pip install dbt-snowflake
-          # Or for BigQuery:
-          # pip install dbt-bigquery
+          pip install dagster-dbt dbt-postgres dbt-bigquery
           echo "Please ensure your dbt adapter (e.g., dbt-postgres, dbt-snowflake) is installed here."
         # This installs tools needed for the next step, not necessarily for the final PEX,
         # though dagster-dbt (library) should be in your project dependencies if used at runtime.
