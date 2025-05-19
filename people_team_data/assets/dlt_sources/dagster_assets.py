@@ -1,4 +1,4 @@
-from dagster import AssetExecutionContext, EnvVar
+from dagster import AssetExecutionContext
 from dagster_dlt import DagsterDltResource, dlt_assets
 from dlt import pipeline
 
@@ -6,8 +6,7 @@ from .bamboo_api_pipeline import bamboohr_source
 from .paycom_pipeline import paycom_source
 from .position_control_pipeline import position_control_source
 
-ENV = EnvVar("ENV").get_value()
-DEST = "bigquery" if (ENV == "prod" or ENV == "stage") else "postgres"
+DEST = "bigquery"
 
 
 @dlt_assets(

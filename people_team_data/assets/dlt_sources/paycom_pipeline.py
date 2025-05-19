@@ -23,20 +23,3 @@ def paycom_source(
         yield from filesystem_pipe
 
     return latest_csv
-
-
-def run_pipeline():
-    # Create a pipeline that writes to PostgreSQL.
-    # Make sure your .dlt/secrets.toml is correctly configured with your PostgreSQL connection details.
-    pipeline = dlt.pipeline(
-        pipeline_name="paycom_pipeline",
-        destination="postgres",
-        dataset_name="paycom_data_raw",
-    )
-    # Run the pipeline; the loader_file_format can be specified if needed.
-    load_info = pipeline.run(paycom_source())
-    print(load_info)
-
-
-if __name__ == "__main__":
-    run_pipeline()

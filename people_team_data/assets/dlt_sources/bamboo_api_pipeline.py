@@ -222,22 +222,3 @@ def bamboohr_source(
             yield record
 
     return employee_data()
-
-
-def load_bamboohr() -> None:
-    """Load data from BambooHR API into the destination for dlt."""
-    logging.info("Starting BambooHR data load pipeline.")
-
-    pipeline = dlt.pipeline(
-        pipeline_name="rest_api_bamboohr",
-        destination="postgres",
-        dataset_name="bamboohr_employee_data",
-    )
-
-    load_info = pipeline.run(bamboohr_source(), loader_file_format="csv")
-    logging.info("Data load completed. Load info: %s", load_info)
-    print(load_info)
-
-
-if __name__ == "__main__":
-    load_bamboohr()

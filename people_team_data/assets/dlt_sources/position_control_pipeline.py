@@ -152,13 +152,3 @@ def position_control_source(
         position_control_stipends,
         position_control_assignments,
     ]
-
-
-if __name__ == "__main__":
-    pipeline = dlt.pipeline(
-        pipeline_name="position_control_pipeline",
-        destination="postgres",
-        dataset_name="raw_position_control_data",
-    )
-    info = pipeline.run(position_control_source())
-    print(info)
