@@ -6,6 +6,8 @@ from dagster_dlt import DagsterDltResource
 from dagster_gcp import BigQueryResource, GCSResource
 from sqlalchemy import create_engine
 
+from ..assets.dbt.project import dbt_project
+
 
 @resource
 def postgres_db(context: InitResourceContext):
@@ -19,7 +21,7 @@ def postgres_db(context: InitResourceContext):
 def get_environment_resources():
     base_resources = {
         "dbt": DbtCliResource(
-            project_dir=EnvVar("DBT_PROJECT_DIR").get_value(),
+            project_dir=dbt_project,
         ),
         "dlt": DagsterDltResource(),
     }
