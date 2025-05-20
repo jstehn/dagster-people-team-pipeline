@@ -78,15 +78,55 @@ def create_keyfile_from_env():
             # Inner try for JSON validation of the written file
             try:
                 with open(KEYFILE_PATH, "r") as f:
-                    json.load(f)
+                    json.load(f)  # Attempt to load directly
                 logger.info(f"Keyfile {KEYFILE_PATH} appears to be valid JSON.")
-            except (
-                json.JSONDecodeError
-            ) as inner_je:  # Inner except for json.load
+            except json.JSONDecodeError as inner_je:
                 logger.warning(
-                    f"Initial check: Written keyfile {KEYFILE_PATH} is NOT valid JSON. "
-                    f"Error: {inner_je.msg} at line {inner_je.lineno} col {inner_je.colno}. "
-                    "This often indicates an issue with the GCP_CREDS environment variable's content or encoding. Re-raising for detailed error logging."
+                    f"Initial check: Written keyfile {KEYFILE_PATH} (from GCP_CREDS) is NOT valid JSON. "
+                    f"Error: {inner_je.msg} at line {inner_je.lineno} col {inner_je.colno} (char index {inner_je.pos}). "
+                    "This strongly indicates an issue with the GCP_CREDS environment variable\\'s content or its Base64 encoding."
+                )
+                # Log a snippet of the problematic content from inner_je.doc
+                # inner_je.doc contains the full input string that failed to parse
+                if hasattr(inner_je, "doc") and inner_je.doc:
+                    doc_content = inner_je.doc
+                    snippet_start = max(0, inner_je.pos - 30)
+                    snippet_end = min(len(doc_content), inner_je.pos + 30)
+                    problematic_snippet = doc_content[snippet_start:snippet_end]
+                    # Replace non-printable characters for safer logging
+                    safe_snippet = "".join(
+                        c
+                        if c.isprintable() or c in "\\n\\r\\t"
+                        else f"\\\\x{ord(c):02x}"
+                        for c in problematic_snippet
+                    )
+                    logger.warning(
+                        f"Problematic JSON snippet (around char index {inner_je.pos}): ...{safe_snippet}..."
+                    )
+
+                    # Log the character code at the error position
+                    if 0 <= inner_je.pos < len(doc_content):
+                        char_at_pos = doc_content[inner_je.pos]
+                        char_repr = (
+                            f"\\\\x{ord(char_at_pos):02x}"
+                            if not char_at_pos.isprintable()
+                            else char_at_pos
+                        )
+                        logger.warning(
+                            f"Character at error position (index {inner_je.pos}): '{char_repr}' (ASCII: {ord(char_at_pos)})"
+                        )
+                    else:
+                        logger.warning(
+                            f"Error position {inner_je.pos} is out of bounds for the document of length {len(doc_content)}."
+                        )
+                else:
+                    logger.warning(
+                        "Could not retrieve the full document from the JSONDecodeError to show a snippet."
+                    )
+                logger.warning(
+                    "ACTION REQUIRED: The GCP_CREDS environment variable likely contains malformed data. "
+                    "Please meticulously verify its Base64 encoding and the original JSON content for any invalid characters, especially around the reported error position. "
+                    "Ensure the original JSON is UTF-8 encoded before Base64 encoding. Common issues include unescaped newlines or other control characters within string values in the original JSON, or errors during the Base64 encoding process itself."
                 )
                 raise  # Re-raise to be caught by the more specific outer handlers
             return True
