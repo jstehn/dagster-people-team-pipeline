@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -21,6 +22,7 @@ DBT_PROFILES_DIR = Path(__file__).joinpath("..", ".dbt").resolve()
 BIGQUERY_KEYFILE_PATH = DBT_PROJECT_ROOT_DIR.joinpath(
     "..", "..", ".secrets", "gcp_bigquery.json"
 ).resolve()
+os.environ["DBT_BIGQUERY_KEYFILE_PATH"] = str(BIGQUERY_KEYFILE_PATH)
 
 
 def verify_central_keyfile():

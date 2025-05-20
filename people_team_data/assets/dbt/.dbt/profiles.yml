@@ -4,7 +4,7 @@ default:
       dataset: staff
       job_execution_timeout_seconds: 300
       job_retries: 1
-      keyfile: '../../../.secrets/gcp_bigquery.json' # Corrected path
+      keyfile: '{{ env_var("DBT_BIGQUERY_KEYFILE_PATH") }}' # Use env var for keyfile path
       location: US
       method: service-account-json
       priority: interactive
