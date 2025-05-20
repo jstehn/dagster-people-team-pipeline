@@ -10,12 +10,12 @@ DBT_PROFILES_DIR = Path(__file__).joinpath("..", ".dbt").resolve()
 
 # Define the path to the centrally managed keyfile
 # This keyfile is expected to be created by setup.py
-CENTRAL_KEYFILE_NAME = "gcp_calibrate_bigquery_keyfile.json"
+BIGQUERY_KEYFILE_NAME = "gcp_bigquery.json"
 # Path relative to the project root, then to people_team_data/.secrets/
 # Assuming DBT_PROJECT_ROOT_DIR is /workspaces/PeopleTeamPipeline/people_team_data/assets/dbt
 # We need to go up three levels to /workspaces/PeopleTeamPipeline, then into people_team_data/.secrets
-CENTRAL_KEYFILE_PATH = DBT_PROJECT_ROOT_DIR.joinpath(
-    "..", "..", ".secrets", CENTRAL_KEYFILE_NAME
+BIGQUERY_KEYFILE_NAME = DBT_PROJECT_ROOT_DIR.joinpath(
+    "..", "..", ".secrets", BIGQUERY_KEYFILE_NAME
 ).resolve()
 
 
@@ -27,31 +27,31 @@ def verify_central_keyfile():
     """
     logger = get_dagster_logger()
 
-    if not CENTRAL_KEYFILE_PATH.exists():
+    if not BIGQUERY_KEYFILE_NAME.exists():
         logger.error(
-            f"CRITICAL FAILURE: Central GCP keyfile does not exist at {CENTRAL_KEYFILE_PATH}. "
+            f"CRITICAL FAILURE: Central GCP keyfile does not exist at {BIGQUERY_KEYFILE_NAME}. "
             f"This file should have been created by setup.py from the GCP_CREDS environment variable. "
             f"Ensure GCP_CREDS is set and setup.py ran successfully during deployment/setup."
         )
         return False
 
-    if CENTRAL_KEYFILE_PATH.stat().st_size == 0:
+    if BIGQUERY_KEYFILE_NAME.stat().st_size == 0:
         logger.error(
-            f"CRITICAL FAILURE: Central GCP keyfile at {CENTRAL_KEYFILE_PATH} is empty. "
+            f"CRITICAL FAILURE: Central GCP keyfile at {BIGQUERY_KEYFILE_NAME} is empty. "
             f"This indicates an issue with its creation by setup.py (e.g., empty GCP_CREDS or write error)."
         )
         return False
 
     try:
-        with open(CENTRAL_KEYFILE_PATH, "r") as f:
+        with open(BIGQUERY_KEYFILE_NAME, "r") as f:
             json.load(f)  # Attempt to parse the JSON
         logger.info(
-            f"Successfully validated central GCP keyfile at {CENTRAL_KEYFILE_PATH} as valid JSON."
+            f"Successfully validated central GCP keyfile at {BIGQUERY_KEYFILE_NAME} as valid JSON."
         )
         return True  # Keyfile exists and is valid
     except json.JSONDecodeError as je:
         logger.error(
-            f"CRITICAL FAILURE: The central GCP keyfile at {CENTRAL_KEYFILE_PATH} is NOT valid JSON. "
+            f"CRITICAL FAILURE: The central GCP keyfile at {BIGQUERY_KEYFILE_NAME} is NOT valid JSON. "
             f"Error details: {je.msg} (Line: {je.lineno}, Column: {je.colno}, Character index: {je.pos}).\\n"
             f"This file is created by setup.py from the GCP_CREDS env var. "
             f"ACTION REQUIRED: Please meticulously verify the 'GCP_CREDS' environment variable. Ensure it contains the "
@@ -61,7 +61,7 @@ def verify_central_keyfile():
         return False
     except Exception as e:
         logger.error(
-            f"An unexpected error occurred while validating the central GCP keyfile {CENTRAL_KEYFILE_PATH}: {e}"
+            f"An unexpected error occurred while validating the central GCP keyfile {BIGQUERY_KEYFILE_NAME}: {e}"
         )
         return False
 
@@ -72,7 +72,7 @@ central_keyfile_is_valid = verify_central_keyfile()
 if not central_keyfile_is_valid:
     logger = get_dagster_logger()  # Ensure logger is available
     error_message = (
-        f"CRITICAL: Central GCP keyfile at {CENTRAL_KEYFILE_PATH} is missing, invalid, or could not be validated. "
+        f"CRITICAL: Central GCP keyfile at {BIGQUERY_KEYFILE_NAME} is missing, invalid, or could not be validated. "
         "This file is essential for dbt operations and should be created by setup.py. "
         "Please check prior log messages for details on why keyfile validation failed. "
         "Halting execution as dbt cannot proceed without a valid keyfile."
