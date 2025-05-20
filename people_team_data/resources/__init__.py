@@ -8,30 +8,35 @@ from sqlalchemy import create_engine
 
 from ..assets.dbt.project import dbt_project
 
+# Construct the expected path to keyfile.json using dbt_project properties
+# This assumes project.py (which defines dbt_project) has run and dbt_project is initialized.
+keyfile_path = dbt_project.profiles_dir.joinpath("keyfile.json").resolve()
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(keyfile_path)
+print(
+    f"resources/__init__.py: Setting GOOGLE_APPLICATION_CREDENTIALS to: {str(keyfile_path)}"
+)
 
-@resource
-def postgres_db(context: InitResourceContext):
-    """A resource that provides a PostgreSQL database connection using SQLAlchemy."""
-    engine = create_engine(
-        "postgresql+psycopg2://postgres:postgres@localhost:5432/calibrate"
+# Define resources directly
+dbt_resource = DbtCliResource(
+    project_dir=dbt_project,
+)
+dlt_resource = DagsterDltResource()
+gcp_project_val = EnvVar("GCP_PROJECT").get_value()
+if not gcp_project_val:
+    raise ValueError(
+        "Environment variable GCP_PROJECT is not set. This is required for GCS and BigQuery resources."
     )
-    return engine
+
+lake_resource = GCSResource(
+    bucket="pipeline_data_raw", project=gcp_project_val
+)  # project directly for GCS
+warehouse_resource = BigQueryResource(project=gcp_project_val, dataset="prod")
 
 
-def get_environment_resources():
-    base_resources = {
-        "dbt": DbtCliResource(
-            project_dir=dbt_project,
-        ),
-        "dlt": DagsterDltResource(),
-    }
-
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = EnvVar(
-        "GCP_CREDS"
-    ).get_value()
-    gcs_config = {"project": EnvVar("GCP_PROJECT"), "dataset": "prod"}
-    return {
-        **base_resources,
-        "lake": GCSResource(bucket="pipeline_data_raw", **gcs_config),
-        "warehouse": BigQueryResource(**gcs_config),
-    }
+# Collection of all resources for easy import in definitions.py
+all_resources = {
+    "dbt": dbt_resource,
+    "dlt": dlt_resource,
+    "lake": lake_resource,
+    "warehouse": warehouse_resource,
+}

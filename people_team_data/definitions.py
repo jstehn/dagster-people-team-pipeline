@@ -1,20 +1,17 @@
 from dagster import Definitions, define_asset_job, load_assets_from_modules
 
-from . import assets, resources
+from . import assets
+from .resources import all_resources  # Import the new all_resources dictionary
 
-# 4. Load all other assets
+# Load all assets
 all_assets = load_assets_from_modules([assets])
 all_assets_job = define_asset_job(name="all_assets_job")
 
-# 5. Get environment resources
-env_resources = resources.get_environment_resources()
-# 6. Create definitions object
+# Create definitions object using the imported resources
 defs = Definitions(
     assets=[*all_assets],
     jobs=[all_assets_job],
     schedules=[],
     sensors=[],
-    resources={
-        **env_resources,
-    },
+    resources=all_resources,  # Use the all_resources dictionary directly
 )
