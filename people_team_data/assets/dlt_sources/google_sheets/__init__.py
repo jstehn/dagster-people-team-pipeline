@@ -5,7 +5,10 @@ from typing import Iterable, Sequence, Union
 import dlt
 from dlt.common import logger
 from dlt.sources import DltResource
-from dlt.sources.credentials import GcpOAuthCredentials, GcpServiceAccountCredentials
+from dlt.sources.credentials import (
+    GcpOAuthCredentials,
+    GcpServiceAccountCredentials,
+)
 
 from .helpers import api_calls
 from .helpers.api_calls import api_auth
@@ -17,7 +20,7 @@ from .helpers.data_processing import (
 )
 
 
-@dlt.source
+@dlt.source(name="google_sheets")  # Explicitly name the source
 def google_spreadsheet(
     spreadsheet_url_or_id: str = dlt.config.value,
     range_names: Sequence[str] = dlt.config.value,
@@ -55,8 +58,10 @@ def google_spreadsheet(
     all_range_names = set(range_names or [])
     # if no explicit ranges, get sheets and named ranges from metadata
     # get metadata with list of sheets and named ranges in the spreadsheet
-    sheet_names, named_ranges, spreadsheet_title = api_calls.get_known_range_names(
-        spreadsheet_id=spreadsheet_id, service=service
+    sheet_names, named_ranges, spreadsheet_title = (
+        api_calls.get_known_range_names(
+            spreadsheet_id=spreadsheet_id, service=service
+        )
     )
     if not range_names:
         if get_sheets:
@@ -70,9 +75,9 @@ def google_spreadsheet(
         spreadsheet_id=spreadsheet_id,
         range_names=list(all_range_names),
     )
-    assert len(all_range_names) == len(
-        all_range_data
-    ), "Google Sheets API must return values for all requested ranges"
+    assert len(all_range_names) == len(all_range_data), (
+        "Google Sheets API must return values for all requested ranges"
+    )
 
     # get metadata for two first rows of each range
     # first should contain headers
@@ -98,7 +103,9 @@ def google_spreadsheet(
             logger.warning(f"Range {name} does not contain any data. Skipping.")
             continue
         if len(values) == 1:
-            logger.warning(f"Range {name} contain only 1 row of data. Skipping.")
+            logger.warning(
+                f"Range {name} contain only 1 row of data. Skipping."
+            )
             continue
         if len(values[0]) == 0:
             logger.warning(
@@ -126,7 +133,7 @@ def google_spreadsheet(
         headers = get_range_headers(headers_metadata, name)
         if headers is None:
             # generate automatic headers and treat the first row as data
-            headers = [f"col_{idx+1}" for idx in range(len(headers_metadata))]
+            headers = [f"col_{idx + 1}" for idx in range(len(headers_metadata))]
             data_row_metadata = headers_metadata
             rows_data = values[0:]
             logger.warning(
