@@ -1,89 +1,135 @@
 import json
-import sys  # Import sys for stderr
+import sys
 from pathlib import Path
 
 from dagster import get_dagster_logger
 from dagster_dbt import DbtProject
 
+# --- Start of changes ---
+# Global variables to store validation status and detailed message
+# These will be updated by verify_central_keyfile()
+central_keyfile_is_valid = False
+# Provide a default message in case verify_central_keyfile somehow isn't called as expected
+KEYFILE_VALIDATION_ERROR_MESSAGE = "GCP keyfile validation status unknown. verify_central_keyfile() may not have run."
+# --- End of changes ---
+
 DBT_PROJECT_ROOT_DIR = Path(__file__).joinpath("..").resolve()
 DBT_PROFILES_DIR = Path(__file__).joinpath("..", ".dbt").resolve()
 
 # Define the path to the centrally managed keyfile
-# This keyfile is expected to be created by setup.py
-BIGQUERY_KEYFILE_NAME = "gcp_bigquery.json"
-# Path relative to the project root, then to people_team_data/.secrets/
-# Assuming DBT_PROJECT_ROOT_DIR is /workspaces/PeopleTeamPipeline/people_team_data/assets/dbt
-# We need to go up three levels to /workspaces/PeopleTeamPipeline, then into people_team_data/.secrets
-BIGQUERY_KEYFILE_NAME = DBT_PROJECT_ROOT_DIR.joinpath(
-    "..", "..", ".secrets", BIGQUERY_KEYFILE_NAME
+# Renamed from BIGQUERY_KEYFILE_NAME for clarity as it's a Path object
+BIGQUERY_KEYFILE_PATH = DBT_PROJECT_ROOT_DIR.joinpath(
+    "..", "..", ".secrets", "gcp_bigquery.json"
 ).resolve()
 
 
 def verify_central_keyfile():
     """
     Verifies the existence and validity of the centrally managed GCP keyfile.
-    This file is expected to be created by the setup.py script.
-    Returns True if a valid keyfile exists, False otherwise, logging errors.
+    Sets global flags central_keyfile_is_valid and KEYFILE_VALIDATION_ERROR_MESSAGE.
+    Logs issues to Dagster logger and prints to stderr.
+    Returns True if a valid keyfile exists, False otherwise.
     """
+    global central_keyfile_is_valid, KEYFILE_VALIDATION_ERROR_MESSAGE  # Allow modification of globals
     logger = get_dagster_logger()
+    current_keyfile_path_str = str(BIGQUERY_KEYFILE_PATH)
 
-    if not BIGQUERY_KEYFILE_NAME.exists():
-        logger.error(
-            f"CRITICAL FAILURE: Central GCP keyfile does not exist at {BIGQUERY_KEYFILE_NAME}. "
+    if not BIGQUERY_KEYFILE_PATH.exists():
+        msg = (
+            f"CRITICAL FAILURE: Central GCP keyfile does not exist at {current_keyfile_path_str}. "
             f"This file should have been created by setup.py from the GCP_CREDS environment variable. "
             f"Ensure GCP_CREDS is set and setup.py ran successfully during deployment/setup."
         )
+        logger.error(msg)
+        print(f"ERROR (project.py): {msg}", file=sys.stderr)
+        central_keyfile_is_valid = False
+        KEYFILE_VALIDATION_ERROR_MESSAGE = msg
         return False
 
-    if BIGQUERY_KEYFILE_NAME.stat().st_size == 0:
-        logger.error(
-            f"CRITICAL FAILURE: Central GCP keyfile at {BIGQUERY_KEYFILE_NAME} is empty. "
+    if BIGQUERY_KEYFILE_PATH.stat().st_size == 0:
+        msg = (
+            f"CRITICAL FAILURE: Central GCP keyfile at {current_keyfile_path_str} is empty. "
             f"This indicates an issue with its creation by setup.py (e.g., empty GCP_CREDS or write error)."
         )
+        logger.error(msg)
+        print(f"ERROR (project.py): {msg}", file=sys.stderr)
+        central_keyfile_is_valid = False
+        KEYFILE_VALIDATION_ERROR_MESSAGE = msg
         return False
 
     try:
-        with open(BIGQUERY_KEYFILE_NAME, "r") as f:
-            json.load(f)  # Attempt to parse the JSON to validate its format
-        logger.info(
-            f"Successfully validated central GCP keyfile at {BIGQUERY_KEYFILE_NAME} as valid JSON."
+        with open(BIGQUERY_KEYFILE_PATH, "r") as f:
+            data = json.load(f)
+
+        if not isinstance(data, dict):
+            msg = f"CRITICAL FAILURE: Central GCP keyfile at {current_keyfile_path_str} does not contain a valid JSON object (e.g., not a dictionary)."
+            logger.error(msg)
+            print(f"ERROR (project.py): {msg}", file=sys.stderr)
+            central_keyfile_is_valid = False
+            KEYFILE_VALIDATION_ERROR_MESSAGE = msg
+            return False
+
+        required_keys = [
+            "type",
+            "project_id",
+            "private_key_id",
+            "private_key",
+            "client_email",
+            "client_id",
+        ]
+        missing_keys = [key for key in required_keys if key not in data]
+        if missing_keys:
+            msg = f"CRITICAL FAILURE: Central GCP keyfile at {current_keyfile_path_str} is missing required keys: {', '.join(missing_keys)}."
+            logger.error(msg)
+            print(f"ERROR (project.py): {msg}", file=sys.stderr)
+            central_keyfile_is_valid = False
+            KEYFILE_VALIDATION_ERROR_MESSAGE = msg
+            return False
+
+        if data.get("type") != "service_account":
+            msg = f"CRITICAL FAILURE: Central GCP keyfile at {current_keyfile_path_str} is not of type 'service_account'. Found type: '{data.get('type')}'."
+            logger.error(msg)
+            print(f"ERROR (project.py): {msg}", file=sys.stderr)
+            central_keyfile_is_valid = False
+            KEYFILE_VALIDATION_ERROR_MESSAGE = msg
+            return False
+
+        success_msg = f"Successfully validated central GCP keyfile at {current_keyfile_path_str} as valid JSON and a service account key."
+        logger.info(success_msg)
+        # print(f"INFO (project.py): {success_msg}", file=sys.stdout) # Optional: print success to stdout
+        central_keyfile_is_valid = True
+        KEYFILE_VALIDATION_ERROR_MESSAGE = (
+            None  # Clear error message on success
         )
-        return True  # Keyfile exists and is valid JSON
+        return True
     except json.JSONDecodeError as je:
-        logger.error(
-            f"CRITICAL FAILURE: Central GCP keyfile at {BIGQUERY_KEYFILE_NAME} is not valid JSON. Error: {je}. "
+        msg = (
+            f"CRITICAL FAILURE: Central GCP keyfile at {current_keyfile_path_str} is not valid JSON. Error: {je}. "
             f"This file should have been created by setup.py."
         )
+        logger.error(msg)
+        print(f"ERROR (project.py): {msg}", file=sys.stderr)
+        central_keyfile_is_valid = False
+        KEYFILE_VALIDATION_ERROR_MESSAGE = msg
         return False
     except Exception as e:
-        logger.error(
-            f"CRITICAL FAILURE: An unexpected error occurred while validating central GCP keyfile at {BIGQUERY_KEYFILE_NAME}. Error: {e}"
-        )
+        msg = f"CRITICAL FAILURE: An unexpected error occurred while validating central GCP keyfile at {current_keyfile_path_str}. Error: {e}"
+        logger.error(msg)
+        print(f"ERROR (project.py): {msg}", file=sys.stderr)
+        central_keyfile_is_valid = False
+        KEYFILE_VALIDATION_ERROR_MESSAGE = msg
         return False
 
 
-# Verify the keyfile upon module load
-central_keyfile_is_valid = verify_central_keyfile()
+# Verify the keyfile upon module load. This sets the global flags.
+verify_central_keyfile()
 
-if not central_keyfile_is_valid:
-    logger = get_dagster_logger()  # Ensure logger is available
-    error_message = (
-        f"CRITICAL: Central GCP keyfile at {BIGQUERY_KEYFILE_NAME} is missing, invalid, or could not be validated. "
-        "This file is essential for dbt operations and should be created by setup.py. "
-        "Please check prior log messages for details on why keyfile validation failed. "
-        "Halting execution as dbt cannot proceed without a valid keyfile."
-    )
-    logger.critical(error_message)
-    print(f"ERROR (project.py): {error_message}", file=sys.stderr)
-    raise RuntimeError(error_message)
+# REMOVED the block that raised RuntimeError immediately based on central_keyfile_is_valid.
+# The check will now happen inside the asset.
 
 dbt_project = DbtProject(
     project_dir=DBT_PROJECT_ROOT_DIR,
-    profiles_dir=DBT_PROFILES_DIR,  # dbt will look for profiles.yml in here
-    # packaged_project_dir is for when the project is packaged, ensure it's correct for your setup
-    # For local development, project_dir and profiles_dir are key.
-    # If you have a separate structure for packaged deployments, adjust packaged_project_dir accordingly.
-    # Assuming dbt-project is a sibling to the 'dbt' directory itself, which contains this project.py
+    profiles_dir=DBT_PROFILES_DIR,
     packaged_project_dir=DBT_PROJECT_ROOT_DIR.parent.joinpath(
         "dbt-project"
     ).resolve(),

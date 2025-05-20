@@ -1,15 +1,31 @@
 from dagster import AssetExecutionContext, get_dagster_logger
 from dagster_dbt import DbtCliResource, dbt_assets
 
-from .project import dbt_project
+from .project import (
+    KEYFILE_VALIDATION_ERROR_MESSAGE,
+    central_keyfile_is_valid,
+    dbt_project,
+)
 
 
 @dbt_assets(manifest=dbt_project.manifest_path)
 def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
     logger = get_dagster_logger()
+
+    if not central_keyfile_is_valid:
+        error_msg_for_dagster = (
+            f"Halting dbt execution: GCP keyfile validation failed during module import. "
+            f"Reason: {KEYFILE_VALIDATION_ERROR_MESSAGE}"
+        )
+        logger.error(error_msg_for_dagster)
+        raise RuntimeError(error_msg_for_dagster)
+    else:
+        logger.info(
+            "GCP keyfile was successfully validated during module import. Proceeding with dbt execution."
+        )
+
     logger.info("Starting dbt build process...")
 
-    # Added --debug flag for verbose output
     dbt_build_cli_invocation = dbt.cli(["build", "--debug"], context=context)
 
     logger.info(
