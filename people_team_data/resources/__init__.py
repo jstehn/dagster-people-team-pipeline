@@ -27,21 +27,6 @@ bigquery_keyfile_path = (
     Path(__file__).parent.parent / ".secrets" / BIGQUERY_KEYFILE_NAME
 ).resolve()
 
-# Set GOOGLE_APPLICATION_CREDENTIALS to the central keyfile path
-# Ensure the keyfile exists before setting, to avoid issues if setup.py didn't run or failed.
-if bigquery_keyfile_path.exists():
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(bigquery_keyfile_path)
-    logger.info(
-        f"Setting GOOGLE_APPLICATION_CREDENTIALS to: {str(bigquery_keyfile_path)}"
-    )
-else:
-    logger.warning(
-        f"Central keyfile NOT FOUND at {str(bigquery_keyfile_path)}. "
-        f"GOOGLE_APPLICATION_CREDENTIALS will not be set by this script. "
-        f"This may lead to authentication errors for GCP resources if not set elsewhere. "
-        f"Ensure setup.py has run successfully and the corresponding KEYFILE_ environment variable was set."
-    )
-
 # Define resources directly
 dbt_resource = DbtCliResource(
     project_dir=dbt_project,
