@@ -69,6 +69,13 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
             f"Value of environment variable {keyfile_env_var}: {keyfile_path_from_env}"
         )
 
+        # Log GCP_PROJECT environment variable
+        gcp_project_env_var = "GCP_PROJECT"
+        gcp_project_from_env = os.environ.get(gcp_project_env_var)
+        logger.info(
+            f"Value of environment variable {gcp_project_env_var}: {gcp_project_from_env}"
+        )
+
         # Log Keyfile Content
         if keyfile_path_from_env:
             keyfile_actual_path = Path(keyfile_path_from_env)
