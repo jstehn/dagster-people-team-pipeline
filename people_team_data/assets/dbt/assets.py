@@ -1,4 +1,4 @@
-from dagster import AssetExecutionContext
+from dagster import AssetExecutionContext, get_dagster_logger
 from dagster_dbt import DbtCliResource, dbt_assets
 
 from .project import dbt_project
@@ -6,4 +6,17 @@ from .project import dbt_project
 
 @dbt_assets(manifest=dbt_project.manifest_path)
 def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
-    yield from dbt.cli(["build"], context=context).stream()
+    logger = get_dagster_logger()
+    logger.info("Starting dbt build process...")
+
+    dbt_build_cli_invocation = dbt.cli(["build"], context=context)
+
+    logger.info(
+        f"Executing dbt CLI command: {' '.join(dbt_build_cli_invocation.process.args)}"
+    )
+
+    for event in dbt_build_cli_invocation.stream():
+        logger.info(f"dbt event: {event}")
+        yield event
+
+    logger.info("Finished dbt build process.")
