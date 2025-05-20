@@ -4,7 +4,7 @@ default:
       dataset: staff
       job_execution_timeout_seconds: 300
       job_retries: 1
-      keyfile: '.dbt/keyfile.json'
+      keyfile: '../../.secrets/gcp_bigquery.json'
       location: US
       method: service-account-json
       priority: interactive

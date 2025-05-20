@@ -1,20 +1,46 @@
+import logging  # Added logging
 import os
+from pathlib import Path  # Added Path
 
 from dagster import EnvVar, InitResourceContext, resource  # noqa: F401
 from dagster_dbt import DbtCliResource
 from dagster_dlt import DagsterDltResource
 from dagster_gcp import BigQueryResource, GCSResource
-from sqlalchemy import create_engine
 
 from ..assets.dbt.project import dbt_project
 
-# Construct the expected path to keyfile.json using dbt_project properties
-# This assumes project.py (which defines dbt_project) has run and dbt_project is initialized.
-keyfile_path = dbt_project.profiles_dir.joinpath("keyfile.json").resolve()
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(keyfile_path)
-print(
-    f"resources/__init__.py: Setting GOOGLE_APPLICATION_CREDENTIALS to: {str(keyfile_path)}"
+# --- Configure logging ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s (resources/__init__.py)",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
+logger = logging.getLogger(__name__)
+# --- End of logging configuration ---
+
+# Define the path to the centrally managed keyfile
+# This keyfile is expected to be created by setup.py in people_team_data/.secrets/
+# Path(__file__).parent is people_team_data/resources
+# Path(__file__).parent.parent is people_team_data
+BIGQUERY_KEYFILE_NAME = "gcp_bigquery.json"  # The primary keyfile
+bigquery_keyfile_path = (
+    Path(__file__).parent.parent / ".secrets" / BIGQUERY_KEYFILE_NAME
+).resolve()
+
+# Set GOOGLE_APPLICATION_CREDENTIALS to the central keyfile path
+# Ensure the keyfile exists before setting, to avoid issues if setup.py didn't run or failed.
+if bigquery_keyfile_path.exists():
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(bigquery_keyfile_path)
+    logger.info(
+        f"Setting GOOGLE_APPLICATION_CREDENTIALS to: {str(bigquery_keyfile_path)}"
+    )
+else:
+    logger.warning(
+        f"Central keyfile NOT FOUND at {str(bigquery_keyfile_path)}. "
+        f"GOOGLE_APPLICATION_CREDENTIALS will not be set by this script. "
+        f"This may lead to authentication errors for GCP resources if not set elsewhere. "
+        f"Ensure setup.py has run successfully and the corresponding KEYFILE_ environment variable was set."
+    )
 
 # Define resources directly
 dbt_resource = DbtCliResource(
