@@ -2,7 +2,3 @@ locations:
 - code_source:
     module_name: people_team_data.definitions
   location_name: people_team_data_definitions
-  build:
-    directory: .
-    include:
-      - "people_team_data/"
