@@ -44,24 +44,20 @@ def verify_central_keyfile():
 
     try:
         with open(BIGQUERY_KEYFILE_NAME, "r") as f:
-            json.load(f)  # Attempt to parse the JSON
+            json.load(f)  # Attempt to parse the JSON to validate its format
         logger.info(
             f"Successfully validated central GCP keyfile at {BIGQUERY_KEYFILE_NAME} as valid JSON."
         )
-        return True  # Keyfile exists and is valid
+        return True  # Keyfile exists and is valid JSON
     except json.JSONDecodeError as je:
         logger.error(
-            f"CRITICAL FAILURE: The central GCP keyfile at {BIGQUERY_KEYFILE_NAME} is NOT valid JSON. "
-            f"Error details: {je.msg} (Line: {je.lineno}, Column: {je.colno}, Character index: {je.pos}).\\n"
-            f"This file is created by setup.py from the GCP_CREDS env var. "
-            f"ACTION REQUIRED: Please meticulously verify the 'GCP_CREDS' environment variable. Ensure it contains the "
-            f"correct, complete, and uncorrupted Base64 encoding of your entire GCP JSON service account key file. "
-            f"The original JSON key must be UTF-8 encoded."
+            f"CRITICAL FAILURE: Central GCP keyfile at {BIGQUERY_KEYFILE_NAME} is not valid JSON. Error: {je}. "
+            f"This file should have been created by setup.py."
         )
         return False
     except Exception as e:
         logger.error(
-            f"An unexpected error occurred while validating the central GCP keyfile {BIGQUERY_KEYFILE_NAME}: {e}"
+            f"CRITICAL FAILURE: An unexpected error occurred while validating central GCP keyfile at {BIGQUERY_KEYFILE_NAME}. Error: {e}"
         )
         return False
 
