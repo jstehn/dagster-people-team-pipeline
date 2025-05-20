@@ -8,7 +8,7 @@ from .project import (
 )
 
 
-@dbt_assets(project=dbt_project)
+@dbt_assets(manifest=dbt_project.manifest_path, project=dbt_project)
 def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
     logger = get_dagster_logger()
 
