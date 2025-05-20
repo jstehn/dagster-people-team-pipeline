@@ -1,5 +1,4 @@
 import logging  # Added logging
-import os
 from pathlib import Path  # Added Path
 
 from dagster import EnvVar, InitResourceContext, resource  # noqa: F401

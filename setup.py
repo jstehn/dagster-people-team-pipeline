@@ -1,5 +1,9 @@
 from setuptools import find_packages, setup
 
+from . import (  # noqa: F401 Make sure to import this module to run the setup script
+    secrets_setup,
+)
+
 setup(
     name="people_team_data",
     version="0.1.0",
