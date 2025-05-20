@@ -9,7 +9,8 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
     logger = get_dagster_logger()
     logger.info("Starting dbt build process...")
 
-    dbt_build_cli_invocation = dbt.cli(["build"], context=context)
+    # Added --debug flag for verbose output
+    dbt_build_cli_invocation = dbt.cli(["build", "--debug"], context=context)
 
     logger.info(
         f"Executing dbt CLI command: {' '.join(dbt_build_cli_invocation.process.args)}"
