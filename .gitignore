@@ -21,3 +21,4 @@ people_team_data/.logs_queue
 scratch*
 *logs
 *keyfile.json
+*.ipynb
