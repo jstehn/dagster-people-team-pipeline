@@ -45,67 +45,17 @@ jobs:
       - name: Prepare DBT project for deployment
         if: steps.prerun.outputs.result == 'pex-deploy'
         env:
-          GCP_CREDS_SECRET: ${{ secrets.GCP_CREDS }} # Store the secret in an intermediate env var
+          KEYFILE_GCP_BIGQUERY: ${{ secrets.KEYFILE_GCP_BIGQUERY }}
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
-          DBT_PROJECT_PATH: ${{ vars.DBT_PROJECT_DIR }} # Store the var in an intermediate env var
+          DBT_PROJECT_PATH: ${{ vars.DBT_PROJECT_DIR }}
         run: |
-          echo "GCP_CREDS_SECRET length: ${#GCP_CREDS_SECRET}"
-          echo "GCP_CREDS_SECRET start: $(echo "${GCP_CREDS_SECRET}" | cut -c 1-50)"
-          echo "GCP_CREDS_SECRET end: $(echo "${GCP_CREDS_SECRET}" | rev | cut -c 1-50 | rev)"
-
-          echo "Attempting to decode GCP_CREDS_SECRET..."
-          # Perform decoding and handle potential errors
-          DECODED_GCP_CREDS=$(echo "${GCP_CREDS_SECRET}" | base64 --decode)
-          DECODE_STATUS=$?
-          if [ ${DECODE_STATUS} -ne 0 ]; then
-            echo "ERROR: base64 decoding of GCP_CREDS_SECRET failed with status ${DECODE_STATUS}. The secret might be corrupted or not valid Base64."
-            # Consider exiting if this is critical: exit 1
-          else
-            echo "Base64 decoding successful."
-            echo "DECODED_GCP_CREDS length: ${#DECODED_GCP_CREDS}"
-            echo "DECODED_GCP_CREDS start: $(echo "${DECODED_GCP_CREDS}" | cut -c 1-100)"
-            echo "DECODED_GCP_CREDS end: $(echo "${DECODED_GCP_CREDS}" | rev | cut -c 1-100 | rev)"
-          fi
-
           python -m pip install pip --upgrade
           cd project-repo
+          echo "Running secrets_setup.py script..."
+          python secrets_setup.py
+          echo "Installing project dependencies..."
           pip install . --upgrade --upgrade-strategy eager
-
-          # Define the target keyfile path using the env var
-          KEYFILE_TARGET_PATH="${DBT_PROJECT_PATH}/.dbt/keyfile.json"
-          echo "Target keyfile path: ${KEYFILE_TARGET_PATH}"
-
-          # Ensure the .dbt directory exists
-          mkdir -p "$(dirname "${KEYFILE_TARGET_PATH}")"
-
-          # Create keyfile.json using the decoded content only if decoding was successful
-          if [ ${DECODE_STATUS} -eq 0 ] && [ -n "${DECODED_GCP_CREDS}" ]; then
-            echo "Writing DECODED_GCP_CREDS to ${KEYFILE_TARGET_PATH}"
-            echo "${DECODED_GCP_CREDS}" > "${KEYFILE_TARGET_PATH}"
-          else
-            echo "Skipping writing keyfile as DECODED_GCP_CREDS is empty or decoding failed."
-          fi
-          
-          echo "Validating keyfile.json content after creation (if attempted):"
-          if [ -f "${KEYFILE_TARGET_PATH}" ]; then
-            echo "keyfile.json exists. Size: $(stat -c%s "${KEYFILE_TARGET_PATH}") bytes."
-            echo "keyfile.json content start (first 100 chars): $(head -c 100 "${KEYFILE_TARGET_PATH}")"
-            echo "keyfile.json content end (last 100 chars): $(tail -c 100 "${KEYFILE_TARGET_PATH}")"
-            if command -v jq &> /dev/null; then
-              echo "Validating keyfile.json with jq:"
-              jq . "${KEYFILE_TARGET_PATH}" || echo "jq validation failed for keyfile.json."
-            else
-              echo "jq not available for JSON validation."
-            fi
-          else
-            echo "keyfile.json was not created at ${KEYFILE_TARGET_PATH} (or writing was skipped)."
-          fi
-
-          # Pass the original base64 encoded secret to the python script via env var
-          # The python script will then perform its own decoding and validation
           echo "Running dagster-dbt project prepare-and-package..."
-          # Ensure GCP_CREDS is set in the environment for the python script
-          export GCP_CREDS="${GCP_CREDS_SECRET}"
           dagster-dbt project prepare-and-package --file "${DBT_PROJECT_PATH}/project.py"
         shell: bash
 
