@@ -300,13 +300,13 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
         "Running dbt debug via subprocess to check connection and configurations..."
     )
     try:
-        dbt_executable = dbt.executable
+        dbt_executable_path = dbt.dbt_executable  # Corrected attribute
 
         # Base command
         command = [
-            dbt_executable,
+            dbt_executable_path,  # Use the corrected variable
             "debug",
-            "--no-version-check",  # Often useful
+            "--no-version-check",
             "--project-dir",
             str(dbt.project_dir),  # Explicitly set project directory
         ]
@@ -319,21 +319,53 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
         if dbt.target:
             command.extend(["--target", dbt.target])
 
-        logger.info(f"dbt executable for subprocess: {dbt_executable}")
+        # Prepare environment for subprocess
+        # Start with a copy of the current environment
+        sub_env = os.environ.copy()
+
+        # Ensure critical env vars (already validated to be in os.environ) are present
+        # dbt's profiles.yml uses env_var() for these, so they need to be in the subprocess's env
+        keyfile_path_from_env = os.environ.get("DBT_BIGQUERY_KEYFILE_PATH")
+        gcp_project_from_env = os.environ.get("GCP_PROJECT")
+
+        if keyfile_path_from_env:
+            sub_env["DBT_BIGQUERY_KEYFILE_PATH"] = keyfile_path_from_env
+        else:
+            logger.warning(
+                "DBT_BIGQUERY_KEYFILE_PATH not found in os.environ for subprocess."
+            )
+
+        if gcp_project_from_env:
+            sub_env["GCP_PROJECT"] = gcp_project_from_env
+        else:
+            logger.warning(
+                "GCP_PROJECT not found in os.environ for subprocess."
+            )
+
+        logger.info(f"dbt executable for subprocess: {dbt_executable_path}")
         logger.info(f"dbt command for subprocess: {' '.join(command)}")
-        # Use dbt.project_dir from the DbtCliResource for cwd
         logger.info(f"dbt project_dir for subprocess (cwd): {dbt.project_dir}")
 
-        # Log a sample of the specific env vars being passed from DbtCliResource
-        # Be cautious about logging sensitive env vars if any are present
+        sensitive_keys = ["KEYFILE", "TOKEN", "PASSWORD", "SECRET"]
+        logged_env_vars = {
+            k: (
+                v
+                if not any(s_key in k.upper() for s_key in sensitive_keys)
+                else "****"
+            )
+            for k, v in sub_env.items()
+            if "DBT_" in k or "GCP_" in k  # Log relevant vars
+        }
+        logger.info(
+            f"Selected environment variables for dbt debug subprocess (potentially redacted): {logged_env_vars}"
+        )
+
         process = subprocess.run(
             command,
-            cwd=str(
-                dbt.project_dir  # Use DbtCliResource's project_dir for cwd
-            ),
+            cwd=str(dbt.project_dir),
             capture_output=True,
             text=True,
-            env=os.environ,  # Use the merged environment
+            env=sub_env,  # Use the prepared environment
             check=False,
         )
 
