@@ -6,6 +6,11 @@ from pathlib import Path
 from dagster import get_dagster_logger
 from dagster_dbt import DbtProject
 
+from ...set_env import configure_secrets, secrets_configured
+
+if not secrets_configured:
+    configure_secrets()
+
 # --- Start of changes ---
 # Global variables to store validation status and detailed message
 # These will be updated by verify_central_keyfile()
@@ -136,4 +141,5 @@ dbt_project = DbtProject(
         "dbt-project"
     ).resolve(),
 )
+dbt_project.prepare_if_dev()
 dbt_project.prepare_if_dev()
