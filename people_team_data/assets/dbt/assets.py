@@ -295,37 +295,93 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
 
     # --- Start of dbt debug command ---
     logger.info("Running dbt debug to check connection and configurations...")
+    dbt_debug_cli_invocation = (
+        None  # Initialize to ensure it's in scope for finally
+    )
     try:
-        # Nullify selection/filtering flags for dbt debug as it doesn't support them
-        debug_flags = {
-            "select": None,
-            "exclude": None,
-            "selector": None,
-            "full_refresh": False,  # dbt debug doesn't use --full-refresh
-        }
+        # For dbt debug, explicitly pass empty/None for selection args
+        # to avoid issues with unsupported flags like --select.
         dbt_debug_cli_invocation = dbt.cli(
-            ["debug"], flags=debug_flags, context=context
+            ["debug"],
+            context=context,
+            select=[],
+            exclude=[],
+            selector_name=None,
         )
         logger.info(
-            f"Executing dbt CLI command: {' '.join(dbt_debug_cli_invocation.process.args)}"
+            f"Executing dbt CLI command (debug): {' '.join(dbt_debug_cli_invocation.process.args)}"
         )
-        for event in dbt_debug_cli_invocation.stream():
-            logger.info(f"dbt debug event: {event}")
+
+        # Use stream_raw_events for more detailed dbt output
+        logger.info("--- Raw dbt debug events ---")
+        has_streamed_debug_output = False
+        for raw_event_message in dbt_debug_cli_invocation.stream_raw_events():
+            # raw_event_message is a DbtCliEventMessage object
+            logger.info(f"Raw dbt debug event: {raw_event_message.raw_event}")
+            has_streamed_debug_output = True
+        if not has_streamed_debug_output:
+            logger.info(
+                "No raw events streamed from dbt debug. This might indicate an early failure or no output."
+            )
+        logger.info("--- Finished raw dbt debug events ---")
+
         dbt_debug_cli_invocation.wait()  # Ensure debug command completes
+
         if dbt_debug_cli_invocation.is_successful():
             logger.info("dbt debug command completed successfully.")
         else:
-            logger.error(
-                "dbt debug command failed. Please check the logs above for details."
-            )
+            logger.error("dbt debug command failed.")
+            dbt_error = dbt_debug_cli_invocation.get_error()
+            if dbt_error:
+                logger.error(
+                    f"Error details from dbt debug invocation: {dbt_error}"
+                )
+            else:
+                logger.error(
+                    "dbt debug invocation failed, but get_error() returned None. Check raw event logs for more details."
+                )
             # Optionally, raise an exception or prevent build if debug fails
             # raise RuntimeError("dbt debug command failed, halting execution.")
     except Exception as e:
-        logger.error(f"An error occurred while running dbt debug: {e}")
+        logger.error(
+            f"An error occurred while preparing or running dbt debug: {e}"
+        )
         # Optionally, re-raise or handle as needed
         # raise
-    logger.info("--- Finished dbt debug command ---")
-    # --- End of dbt debug command ---
+    finally:
+        logger.info("--- Finished dbt debug command execution attempt ---")
+        if dbt_debug_cli_invocation:
+            logger.info(
+                f"dbt debug target_path: {dbt_debug_cli_invocation.target_path}"
+            )
+            # dbt's main log file is usually in <project_dir>/logs/dbt.log
+            # The target_path might contain specific run artifacts or sometimes a copy/link if log-path is configured there.
+            # For dbt's own structured logs (if log-format is json), they might go to a file in target_path/logs or a specified log-path.
+
+    # Attempt to read dbt.log from the project's standard logs directory
+    logger.info(
+        "--- Attempting to read dbt.log from project logs directory ---"
+    )
+    try:
+        # dbt.project_dir should be the correct root of the dbt project
+        dbt_project_log_file_path = Path(dbt.project_dir) / "logs" / "dbt.log"
+        logger.info(f"Looking for dbt.log at: {dbt_project_log_file_path}")
+        if (
+            dbt_project_log_file_path.exists()
+            and dbt_project_log_file_path.is_file()
+        ):
+            log_content = dbt_project_log_file_path.read_text()
+            # Log a portion of the file, e.g., the last 2000 characters
+            logger.info(
+                f"Contents of {dbt_project_log_file_path} (last 2000 chars):\\n...{log_content[-2000:]}"
+            )
+        else:
+            logger.warning(
+                f"{dbt_project_log_file_path} not found or is not a file."
+            )
+    except Exception as e_log:
+        logger.error(f"Could not read dbt.log from project logs: {e_log}")
+    logger.info("--- Finished attempt to read dbt.log ---")
 
     logger.info("Starting dbt build process...")
 

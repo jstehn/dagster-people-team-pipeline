@@ -30,8 +30,6 @@ bigquery_keyfile_path = (
 dbt_resource = DbtCliResource(
     project_dir=dbt_project,
     profiles_dir=dbt_project.profiles_dir,
-    profile="default",  # Explicitly set the profile
-    target="staff",  # Explicitly set the target
 )
 dlt_resource = DagsterDltResource()
 gcp_project_val = EnvVar("GCP_PROJECT").get_value()
