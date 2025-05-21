@@ -128,6 +128,16 @@ def _export_env_var(
     name: str, value: str, github_env_file_path: str = GITHUB_ENV_FILE_PATH
 ) -> bool:
     """Sets an environment variable and exports it to the $GITHUB_ENV file if available and valid."""
+    if "DAGSTER" in name.upper():
+        logger.warning(
+            f"Environment variable name '{name}' is reserved for Dagster. Skipping export."
+        )
+        return False
+    if "GITHUB" in name.upper():
+        logger.warning(
+            f"Environment variable name '{name}' is reserved for GitHub Actions. Skipping export."
+        )
+        return False
     if not _is_valid_env_var_name(name):
         logger.warning(
             f"Environment variable name '{name}' is invalid for GitHub Actions. Skipping export."
