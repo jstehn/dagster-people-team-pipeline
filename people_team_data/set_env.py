@@ -51,6 +51,7 @@ logger = logging.getLogger(__name__)
 
 # --- Global Variables ---
 GITHUB_ENV_FILE_PATH: Optional[str] = os.getenv("GITHUB_ENV")
+secrets_configured = False  # Flag to indicate if secrets have been configured
 
 
 # --- Helper Functions ---
@@ -149,25 +150,25 @@ def _export_env_var(
             f"Value for env var '{name}' was not a string (type: {type(value)}). Converting to string."
         )
         value = str(value)
-    os.environ[name] = value
     escaped_value = _escape_value(value)
     logger_value = _get_value_logger_str(name, escaped_value)
+    os.environ[name] = value
+    logger.info(
+        f'Successfully set environment variable: {name}="{logger_value}"'
+    )
     if not github_env_file_path:
-        logger.warning(
-            f"GITHUB_ENV file path not set. Skipping export for '{name}'."
-        )
         return True
     try:
         exported_to_github = _export_to_github_env(
             name, escaped_value, github_env_file_path
         )
         logger.info(
-            f'Successfully set and exported environment variable: {name}="{logger_value}"'
+            f'Successfully exported environmental variable to GITHUB_ENV: {name}="{logger_value}"'
         )
         return exported_to_github
     except Exception as e:
         logger.error(
-            f'Failed to set or export environment variable {name}="{logger_value}": {e}',
+            f'Failed to set environmental variable to GITHUB_ENV {name}="{logger_value}": {e}',
             exc_info=True,
         )
         return False
@@ -530,7 +531,7 @@ def export_all_secrets_to_env(secrets_json_str: Optional[str]) -> None:
                           Typically sourced from GitHub Actions' `toJson(secrets)` context.
     """
     if not secrets_json_str:
-        logger.warning(
+        logger.info(
             "No JSON string provided for exporting all secrets (e.g., from ALL_SECRETS_JSON_FOR_ENV_EXPORT). Skipping."
         )
         return True
@@ -571,7 +572,7 @@ def export_all_secrets_to_env(secrets_json_str: Optional[str]) -> None:
 # --- Main Execution ---
 
 
-def main() -> int:
+def configure_secrets() -> int:
     """
     Main function to orchestrate the secrets setup.
 
@@ -594,8 +595,11 @@ def main() -> int:
     secrets_export_success = export_all_secrets_to_env(
         os.getenv("ALL_SECRETS_JSON_FOR_ENV_EXPORT")
     )
+    secrets_configured = (
+        keyfile_success and mapping_success and secrets_export_success
+    )
 
-    if keyfile_success and mapping_success and secrets_export_success:
+    if secrets_configured:
         logger.info(
             "--- Secrets and Environment Configuration Script Completed Successfully ---"
         )
@@ -608,4 +612,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(configure_secrets())

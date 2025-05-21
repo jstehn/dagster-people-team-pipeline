@@ -55,8 +55,6 @@ jobs:
           cd project-repo
           echo "Installing project dependencies..."
           pip install . --upgrade --upgrade-strategy eager
-          echo "Running configure_secrets.py script..."
-          python configure_secrets.py
           echo "Running dagster-dbt project prepare-and-package..."
           dagster-dbt project prepare-and-package --file "${DBT_PROJECT_PATH}/project.py"
         shell: bash

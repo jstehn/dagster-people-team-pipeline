@@ -2,6 +2,9 @@ from dagster import Definitions, define_asset_job, load_assets_from_modules
 
 from . import assets
 from .resources import all_resources  # Import the new all_resources dictionary
+from .set_env import configure_secrets
+
+configure_secrets()
 
 # Load all assets
 all_assets = load_assets_from_modules([assets])
