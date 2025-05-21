@@ -27,6 +27,7 @@ import base64
 import json
 import logging
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -51,252 +52,115 @@ logger = logging.getLogger(__name__)
 # --- Global Variables ---
 GITHUB_ENV_FILE_PATH: Optional[str] = os.getenv("GITHUB_ENV")
 
+
 # --- Helper Functions ---
-
-
-def _decode_and_validate_json(
-    base64_encoded_str: str, source_description: str
-) -> Optional[Dict[str, Any]]:
+def _escape_value(value: str) -> str:
     """
-    Decodes a base64 encoded string, then decodes it as UTF-8,
-    and finally parses it as JSON, validating it's a dictionary.
+    Escapes special characters in a string for GitHub Actions environment variables.
 
     Args:
-        base64_encoded_str: The base64 encoded string to process.
-        source_description: A description of the source of the string
-                             (e.g., an environment variable name) for logging.
+        value: The string to escape.
 
     Returns:
-        A dictionary if decoding and parsing are successful and the result
-        is a dictionary, otherwise None.
+        The escaped string.
     """
-    if not base64_encoded_str.strip():
-        logger.warning(
-            f"Input string for '{source_description}' is empty. Cannot decode."
-        )
-        return None
-    try:
-        decoded_bytes = base64.b64decode(base64_encoded_str)
-    except base64.binascii.Error as e:
-        logger.error(
-            f"Failed to decode base64 string from '{source_description}'. Error: {e}"
-        )
-        return None
-
-    try:
-        json_str = decoded_bytes.decode("utf-8")
-    except UnicodeDecodeError as e:
-        logger.error(
-            f"Failed to decode UTF-8 from base64 decoded string from '{source_description}'. Error: {e}"
-        )
-        return None
-
-    try:
-        data = json.loads(json_str)
-        if not isinstance(data, dict):
-            logger.error(
-                f"Decoded JSON from '{source_description}' is not a dictionary (type: {type(data)})."
-            )
-            return None
-        return data
-    except json.JSONDecodeError as e:
-        logger.error(
-            f"Failed to parse JSON string from '{source_description}'. Error: {e}"
-        )
-        logger.debug(
-            f"Problematic JSON string (first 100 chars): '{json_str[:100]}'"
-        )
-        return None
+    return value.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r")
 
 
-def _write_keyfile(secrets_dir: Path, filename: str, content_str: str) -> bool:
+def _export_to_github_env(
+    name: str, value: str, github_env_file_path: str = GITHUB_ENV_FILE_PATH
+) -> bool:
     """
-    Writes the given string content to a file in the specified secrets directory.
-    Also verifies that the written content can be loaded as JSON.
-
-    Args:
-        secrets_dir: The directory where the file should be written.
-        filename: The name of the file to write.
-        content_str: The string content to write to the file.
-
-    Returns:
-        True if writing and JSON validation are successful, False otherwise.
-    """
-    keyfile_path = secrets_dir / filename
-    try:
-        secrets_dir.mkdir(parents=True, exist_ok=True)
-        with open(keyfile_path, "w", encoding="utf-8") as f:
-            f.write(content_str)
-        logger.info(f"Successfully wrote keyfile to '{keyfile_path}'.")
-
-        # Verify the written file is valid JSON
-        with open(keyfile_path, "r", encoding="utf-8") as f_verify:
-            json.load(f_verify)
-        logger.info(f"Successfully validated JSON content of '{keyfile_path}'.")
-        return True
-    except OSError as e:
-        logger.error(f"Failed to write keyfile to '{keyfile_path}'. Error: {e}")
-    except json.JSONDecodeError as e:
-        logger.error(
-            f"Written keyfile '{keyfile_path}' is not valid JSON. Error: {e}"
-        )
-    except Exception as e:
-        logger.error(
-            f"An unexpected error occurred during keyfile write or validation for '{keyfile_path}'. Error: {e}"
-        )
-
-    # Attempt to remove partially written or invalid file
-    if keyfile_path.exists():
-        try:
-            keyfile_path.unlink()
-            logger.info(
-                f"Removed invalid or partially written keyfile '{keyfile_path}'."
-            )
-        except OSError as e_del:
-            logger.error(
-                f"Failed to remove problematic keyfile '{keyfile_path}'. Error: {e_del}"
-            )
-    return False
-
-
-def _set_env_var(name: str, value: str) -> None:
-    """
-    Sets an environment variable. If GITHUB_ENV is defined, appends to it.
-    Otherwise, sets it in the current process's environment.
+    Exports an environment variable to the GitHub Actions environment file.
 
     Args:
         name: The name of the environment variable.
-        value: The value of the environment variable.
-    """
-    logger.info(f"Setting environment variable: {name}")
-    if GITHUB_ENV_FILE_PATH:
-        # Ensure the variable name is valid for GitHub Actions
-        if not name.replace("_", "").isalnum() or name.startswith(
-            ("GITHUB_", "RUNNER_")
-        ):
-            logger.warning(
-                f"Environment variable name '{name}' might not be suitable for GitHub Actions. "
-                "It should contain only letters, numbers, and underscores, and not start with GITHUB_ or RUNNER_."
-            )
-
-        # Properly format for GITHUB_ENV, especially for multi-line values
-        if "\\n" in value or "\\r" in value:
-            delimiter = f"__ENV_DELIM_{name.upper().replace('-', '_')}__"
-            formatted_output = f"{name}<<{delimiter}\\n{value}\\n{delimiter}\\n"
-        else:
-            formatted_output = f"{name}={value}\\n"
-
-        try:
-            with open(GITHUB_ENV_FILE_PATH, "a", encoding="utf-8") as f:
-                f.write(formatted_output)
-            logger.info(f"Exported '{name}' to $GITHUB_ENV file.")
-        except OSError as e:
-            logger.error(
-                f"Failed to write to GITHUB_ENV file ('{GITHUB_ENV_FILE_PATH}'). Error: {e}. "
-                f"Setting '{name}' in current process environment as fallback."
-            )
-            os.environ[name] = value  # Fallback
-    else:
-        os.environ[name] = value
-        logger.info(
-            f"Set '{name}' in current process environment (GITHUB_ENV not found)."
-        )
-
-
-# --- Main Processing Functions ---
-
-
-def process_keyfile_env_vars(project_root_dir: Path) -> bool:
-    """
-    Finds environment variables prefixed with KEYFILE_ENV_PREFIX,
-    decodes their base64 JSON content, and writes them to JSON files
-    in the SECRETS_DIR_RELATIVE_PATH.
-
-    Args:
-        project_root_dir: The root directory of the project.
+        value: The value of the environment variable. (Presumed already escaped)
+        github_env_file_path: The path to the GitHub Actions environment file.
 
     Returns:
-        True if all found keyfiles were processed successfully, False otherwise.
+        True if the export was successful, False otherwise.
     """
-    logger.info(
-        f"Starting processing of '{KEYFILE_ENV_PREFIX}*' environment variables."
-    )
-    secrets_dir_abs_path = project_root_dir / SECRETS_DIR_RELATIVE_PATH
-
-    found_keyfile_vars_count = 0
-    successful_keyfile_writes = 0
-    overall_success = True
-
-    for env_var_name, base64_encoded_value in os.environ.items():
-        if env_var_name.startswith(KEYFILE_ENV_PREFIX):
-            found_keyfile_vars_count += 1
-            logger.info(
-                f"Found keyfile environment variable: '{env_var_name}'."
+    # Check if value contains actual newlines
+    if github_env_file_path:
+        try:
+            with open(github_env_file_path, "a", encoding="utf-8") as f:
+                f.write(f'{name}="{value}"\n')
+            logger.info(f"Exported '{name}' to $GITHUB_ENV.")
+            return True
+        except OSError as e:
+            logger.error(
+                f"Failed to write to GITHUB_ENV file ('{github_env_file_path}'). Error: {e}"
             )
-
-            if not base64_encoded_value:
-                logger.warning(
-                    f"Environment variable '{env_var_name}' is set but empty. Skipping."
-                )
-                overall_success = False
-                continue
-
-            filename_stem = env_var_name[len(KEYFILE_ENV_PREFIX) :].lower()
-            if not filename_stem:
-                logger.warning(
-                    f"Environment variable '{env_var_name}' results in an empty filename stem. Skipping."
-                )
-                overall_success = False
-                continue
-
-            keyfile_name = f"{filename_stem}.json"
-
-            # Decode base64 and then UTF-8 to get the original JSON string
-            # We need the string form to write to the file, not the parsed dict yet.
-            try:
-                decoded_bytes = base64.b64decode(base64_encoded_value)
-                json_content_str = decoded_bytes.decode("utf-8")
-            except base64.binascii.Error as e:
-                logger.error(
-                    f"Failed to decode base64 for '{env_var_name}'. Error: {e}"
-                )
-                overall_success = False
-                continue
-            except UnicodeDecodeError as e:
-                logger.error(
-                    f"Failed to decode UTF-8 for '{env_var_name}' after base64. Error: {e}"
-                )
-                overall_success = False
-                continue
-
-            # Now validate this string is indeed JSON before writing
-            try:
-                json.loads(json_content_str)  # Validate if it's proper JSON
-            except json.JSONDecodeError as e:
-                logger.error(
-                    f"Content of '{env_var_name}' (after base64/UTF-8 decode) is not valid JSON. Error: {e}. "
-                    f"Problematic JSON string (first 100 chars): '{json_content_str[:100]}'"
-                )
-                overall_success = False
-                continue
-
-            if _write_keyfile(
-                secrets_dir_abs_path, keyfile_name, json_content_str
-            ):
-                successful_keyfile_writes += 1
-            else:
-                overall_success = False  # _write_keyfile logs its own errors
-
-    if found_keyfile_vars_count == 0:
-        logger.info(
-            f"No environment variables found with prefix '{KEYFILE_ENV_PREFIX}'."
-        )
+            return False
     else:
-        logger.info(
-            f"Processed {found_keyfile_vars_count} keyfile environment variables. "
-            f"Successfully wrote {successful_keyfile_writes} keyfiles."
+        logger.warning(
+            "GITHUB_ENV is not set. Cannot export environment variables to GitHub Actions."
         )
-    return overall_success
+        return False
+
+
+def _get_value_logger_str(name: str, value: str) -> str:
+    if (
+        "PRIVATE" in name.upper()
+        or "KEYFILE" in name.upper()
+        or "SECRET" in name.upper()
+    ):
+        logger_value = f"*** LENGTH {len(value)} ***"
+    else:
+        logger_value = value[:20] + ("..." if len(value) > 20 else "")
+    return logger_value
+
+
+def _is_valid_env_var_name(name: str) -> bool:
+    """
+    Checks if the environment variable name is valid for GitHub Actions.
+    GitHub Actions env var names must match ^[A-Za-z_][A-Za-z0-9_]*$ and be <= 32767 chars.
+    """
+    return (
+        isinstance(name, str)
+        and 0 < len(name) <= 32767
+        and re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", name) is not None
+    )
+
+
+def _export_env_var(
+    name: str, value: str, github_env_file_path: str = GITHUB_ENV_FILE_PATH
+) -> bool:
+    """Sets an environment variable and exports it to the $GITHUB_ENV file if available and valid."""
+    if not _is_valid_env_var_name(name):
+        logger.warning(
+            f"Environment variable name '{name}' is invalid for GitHub Actions. Skipping export."
+        )
+        return False
+
+    if not isinstance(value, str):
+        logger.warning(
+            f"Value for env var '{name}' was not a string (type: {type(value)}). Converting to string."
+        )
+        value = str(value)
+    os.environ[name] = value
+    escaped_value = _escape_value(value)
+    logger_value = _get_value_logger_str(name, escaped_value)
+    if not github_env_file_path:
+        logger.warning(
+            f"GITHUB_ENV file path not set. Skipping export for '{name}'."
+        )
+        return True
+    try:
+        exported_to_github = _export_to_github_env(
+            name, escaped_value, github_env_file_path
+        )
+        logger.info(
+            f'Successfully set and exported environment variable: {name}="{logger_value}"'
+        )
+        return exported_to_github
+    except Exception as e:
+        logger.error(
+            f'Failed to set or export environment variable {name}="{logger_value}": {e}',
+            exc_info=True,
+        )
+        return False
 
 
 def _process_env_mapping_recursive(
@@ -355,7 +219,6 @@ def _process_env_mapping_recursive(
                 )
                 new_env_var_name = f"{final_prefix}__{sanitized_key}"
 
-                value_str: str
                 if isinstance(value, (dict, list)):
                     value_str = json.dumps(value)
                 elif isinstance(value, bool):
@@ -363,8 +226,8 @@ def _process_env_mapping_recursive(
                 else:
                     value_str = str(value)
 
-                _set_env_var(new_env_var_name, value_str)
-            return True  # This specific 'envvar' node processed
+                _export_env_var(new_env_var_name, value_str)
+            return True
 
         else:  # Traverse deeper
             for key, next_node in config_node.items():
@@ -397,6 +260,206 @@ def _process_env_mapping_recursive(
             f"'{'__'.join(current_prefix_parts)}': {type(config_node)}. Value: '{str(config_node)[:50]}'."
         )
         return True
+
+
+def _decode_and_validate_json(
+    base64_encoded_str: str, source_description: str
+) -> Optional[Dict[str, Any]]:
+    """
+    Decodes a base64 encoded string, then decodes it as UTF-8,
+    and finally parses it as JSON, validating it's a dictionary.
+
+    Args:
+        base64_encoded_str: The base64 encoded string to process.
+        source_description: A description of the source of the string
+                             (e.g., an environment variable name) for logging.
+
+    Returns:
+        A dictionary if decoding and parsing are successful and the result
+        is a dictionary, otherwise None.
+    """
+    if not base64_encoded_str.strip():
+        logger.warning(
+            f"Input string for '{source_description}' is empty. Cannot decode."
+        )
+        return None
+    try:
+        decoded_bytes = base64.b64decode(base64_encoded_str)
+        json_str = decoded_bytes.decode("utf-8")
+        data = json.loads(json_str)
+        if not isinstance(data, dict):
+            logger.error(
+                f"Decoded JSON from '{source_description}' is not a dictionary (type: {type(data)})."
+            )
+            raise json.JSONDecodeError(
+                "Decoded JSON is not a dictionary.", json_str, 0
+            )
+        return data
+    except UnicodeDecodeError as e:
+        logger.error(
+            f"Failed to decode UTF-8 from base64 decoded string from '{source_description}'. Error: {e}"
+        )
+        raise
+    except json.JSONDecodeError as e:
+        logger.error(
+            f"Failed to parse JSON string from '{source_description}'. Error: {e}"
+        )
+        logger.debug(
+            f"Problematic JSON string (first 100 chars): '{json_str[:100]}'"
+        )
+        raise
+    except base64.binascii.Error as e:
+        logger.error(
+            f"Failed to decode base64 string from '{source_description}'. Error: {e}"
+        )
+        raise
+    except Exception as e:
+        logger.error(
+            f"Unexpected error processing base64 string from '{source_description}'. Error: {e}"
+        )
+        raise
+
+
+def _write_keyfile(secrets_dir: Path, filename: str, content_str: str) -> bool:
+    """
+    Writes the given string content to a file in the specified secrets directory.
+    Also verifies that the written content can be loaded as JSON.
+
+    Args:
+        secrets_dir: The directory where the file should be written.
+        filename: The name of the file to write.
+        content_str: The string content to write to the file.
+
+    Returns:
+        True if writing and JSON validation are successful, False otherwise.
+    """
+    keyfile_path = secrets_dir / filename
+    try:
+        secrets_dir.mkdir(parents=True, exist_ok=True)
+        with open(keyfile_path, "w", encoding="utf-8") as f:
+            f.write(content_str)
+        logger.info(f"Successfully wrote keyfile to '{keyfile_path}'.")
+
+        # Verify the written file is valid JSON
+        with open(keyfile_path, "r", encoding="utf-8") as f_verify:
+            json.load(f_verify)
+        logger.info(f"Successfully validated JSON content of '{keyfile_path}'.")
+        return True
+    except OSError as e:
+        logger.error(f"Failed to write keyfile to '{keyfile_path}'. Error: {e}")
+    except json.JSONDecodeError as e:
+        logger.error(
+            f"Written keyfile '{keyfile_path}' is not valid JSON. Error: {e}"
+        )
+    except Exception as e:
+        logger.error(
+            f"An unexpected error occurred during keyfile write or validation for '{keyfile_path}'. Error: {e}"
+        )
+
+    # Attempt to remove partially written or invalid file
+    if keyfile_path.exists():
+        try:
+            keyfile_path.unlink()
+            logger.info(
+                f"Removed invalid or partially written keyfile '{keyfile_path}'."
+            )
+        except OSError as e_del:
+            logger.error(
+                f"Failed to remove problematic keyfile '{keyfile_path}'. Error: {e_del}"
+            )
+    return False
+
+
+# --- Main Processing Functions ---
+
+
+def process_keyfile_env_vars(project_root_dir: Path) -> bool:
+    """
+    Finds environment variables prefixed with KEYFILE_ENV_PREFIX,
+    decodes their base64 JSON content (if needed), and writes them to JSON files
+    in the SECRETS_DIR_RELATIVE_PATH.
+
+    Args:
+        project_root_dir: The root directory of the project.
+
+    Returns:
+        True if all found keyfiles were processed successfully, False otherwise.
+    """
+    logger.info(
+        f"Starting processing of '{KEYFILE_ENV_PREFIX}*' environment variables."
+    )
+    secrets_dir_abs_path = project_root_dir / SECRETS_DIR_RELATIVE_PATH
+
+    found_keyfile_vars_count = 0
+    successful_keyfile_writes = 0
+    overall_success = True
+
+    for env_var_name, value in os.environ.items():
+        if env_var_name.startswith(KEYFILE_ENV_PREFIX):
+            found_keyfile_vars_count += 1
+            logger.info(
+                f"Found keyfile environment variable: '{env_var_name}'."
+            )
+
+            if not value:
+                logger.warning(
+                    f"Environment variable '{env_var_name}' is set but empty. Skipping."
+                )
+                overall_success = False
+                continue
+
+            filename_stem = env_var_name[len(KEYFILE_ENV_PREFIX) :].lower()
+            if not filename_stem:
+                logger.warning(
+                    f"Environment variable '{env_var_name}' results in an empty filename stem. Skipping."
+                )
+                overall_success = False
+                continue
+
+            keyfile_name = f"{filename_stem}.json"
+
+            # Try to decode as base64, but if that fails, treat as plain JSON string
+            json_content_str = None
+            try:
+                # Check if value is valid base64 by trying to decode and then decode as utf-8
+                decoded_bytes = base64.b64decode(value, validate=True)
+                json_content_str = decoded_bytes.decode("utf-8")
+                logger.info(f"'{env_var_name}' appears to be base64-encoded.")
+            except (base64.binascii.Error, UnicodeDecodeError):
+                # Not base64, treat as plain JSON string
+                json_content_str = value
+                logger.info(
+                    f"'{env_var_name}' is not base64-encoded, treating as plain JSON string."
+                )
+
+            # Now validate this string is indeed JSON before writing
+            try:
+                json.loads(json_content_str)  # Validate if it's proper JSON
+            except json.JSONDecodeError as e:
+                logger.error(
+                    f"Content of '{env_var_name}' is not valid JSON. Error: {e}. "
+                    f"Problematic JSON string (first 100 chars): '{json_content_str[:100]}'"
+                )
+                overall_success = False
+                continue
+
+            if _write_keyfile(
+                secrets_dir_abs_path, keyfile_name, json_content_str
+            ):
+                successful_keyfile_writes += 1
+            else:
+                overall_success = False  # _write_keyfile logs its own errors
+
+    if found_keyfile_vars_count == 0:
+        logger.info(
+            f"No environment variables found with prefix '{KEYFILE_ENV_PREFIX}'."
+        )
+    else:
+        logger.info(
+            f"Processed {found_keyfile_vars_count} keyfile environment variables. "
+            f"Successfully wrote {successful_keyfile_writes} keyfiles."
+        )
+    return overall_success
 
 
 def process_env_mappings(project_root_dir: Path) -> bool:
@@ -457,10 +520,10 @@ def export_all_secrets_to_env(secrets_json_str: Optional[str]) -> None:
                           Typically sourced from GitHub Actions' `toJson(secrets)` context.
     """
     if not secrets_json_str:
-        logger.info(
+        logger.warning(
             "No JSON string provided for exporting all secrets (e.g., from ALL_SECRETS_JSON_FOR_ENV_EXPORT). Skipping."
         )
-        return False
+        return True
 
     logger.info(
         "Attempting to export all secrets from JSON string to environment variables."
@@ -475,7 +538,7 @@ def export_all_secrets_to_env(secrets_json_str: Optional[str]) -> None:
 
         for name, value in all_secrets.items():
             if isinstance(value, (str, int, float, bool)):
-                _set_env_var(name, str(value))
+                _export_env_var(name, str(value))
             else:
                 logger.warning(
                     f"Secret '{name}' has a complex type ({type(value)}) and will not be directly exported as an environment variable. "
