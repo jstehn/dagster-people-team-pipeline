@@ -293,6 +293,31 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
         logger.info("--- End of DBT Configuration Debugging ---")
         # --- End of Added Debug Logging ---
 
+    # --- Start of dbt debug command ---
+    logger.info("Running dbt debug to check connection and configurations...")
+    try:
+        dbt_debug_cli_invocation = dbt.cli(["debug"], context=context)
+        logger.info(
+            f"Executing dbt CLI command: {' '.join(dbt_debug_cli_invocation.process.args)}"
+        )
+        for event in dbt_debug_cli_invocation.stream():
+            logger.info(f"dbt debug event: {event}")
+        dbt_debug_cli_invocation.wait()  # Ensure debug command completes
+        if dbt_debug_cli_invocation.is_successful():
+            logger.info("dbt debug command completed successfully.")
+        else:
+            logger.error(
+                "dbt debug command failed. Please check the logs above for details."
+            )
+            # Optionally, raise an exception or prevent build if debug fails
+            # raise RuntimeError("dbt debug command failed, halting execution.")
+    except Exception as e:
+        logger.error(f"An error occurred while running dbt debug: {e}")
+        # Optionally, re-raise or handle as needed
+        # raise
+    logger.info("--- Finished dbt debug command ---")
+    # --- End of dbt debug command ---
+
     logger.info("Starting dbt build process...")
 
     dbt_build_cli_invocation = dbt.cli(["build", "--debug"], context=context)
