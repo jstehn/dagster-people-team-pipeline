@@ -296,7 +296,16 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
     # --- Start of dbt debug command ---
     logger.info("Running dbt debug to check connection and configurations...")
     try:
-        dbt_debug_cli_invocation = dbt.cli(["debug"], context=context)
+        # Nullify selection/filtering flags for dbt debug as it doesn't support them
+        debug_flags = {
+            "select": None,
+            "exclude": None,
+            "selector": None,
+            "full_refresh": False,  # dbt debug doesn't use --full-refresh
+        }
+        dbt_debug_cli_invocation = dbt.cli(
+            ["debug"], flags=debug_flags, context=context
+        )
         logger.info(
             f"Executing dbt CLI command: {' '.join(dbt_debug_cli_invocation.process.args)}"
         )
