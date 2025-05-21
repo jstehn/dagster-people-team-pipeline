@@ -1,6 +1,7 @@
 import json  # Added for keyfile JSON validation
 import os  # Added for environment variables
 import subprocess  # Added for direct dbt executable call
+import sys  # Added for GCP client test script
 from pathlib import Path  # Added for path operations
 
 from dagster import AssetExecutionContext, get_dagster_logger
@@ -86,10 +87,19 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
             f"Environment variable {keyfile_env_var}: {keyfile_path_from_env}"
         )
 
-        gcp_project_env_var = "GCP_PROJECT"
+        gcp_project_env_var = "GCP_BASE_PROJECT"
         gcp_project_from_env = os.environ.get(gcp_project_env_var)
         logger.info(
             f"Environment variable {gcp_project_env_var}: {gcp_project_from_env}"
+        )
+
+        gac_env_var = "GOOGLE_APPLICATION_CREDENTIALS"
+        gac_path_from_env = os.environ.get(gac_env_var)
+        logger.info(f"Environment variable {gac_env_var}: {gac_path_from_env}")
+
+        current_path_env_var = os.environ.get("PATH")
+        logger.info(
+            f"Current process PATH environment variable: {current_path_env_var}"
         )
 
         # Log and Validate Keyfile
@@ -295,6 +305,150 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
         logger.info("--- End of DBT Configuration Debugging ---")
         # --- End of Added Debug Logging ---
 
+    # --- Start of GCP Client Test Script Execution ---
+    logger.info("--- Preparing and running GCP Client Test Script ---")
+    gcp_test_script_content = """
+import sys
+from google.cloud import bigquery
+from google.oauth2 import service_account
+import os
+import json
+
+print(f"Python executable for this script: {sys.executable}")
+print(f"Python version for this script: {sys.version}")
+
+keyfile_path = os.environ.get("DBT_BIGQUERY_KEYFILE_PATH")
+gcp_project = os.environ.get("GCP_BASE_PROJECT")
+
+print(f"--- GCP Client Test Script ---")
+print(f"Using DBT_BIGQUERY_KEYFILE_PATH: {keyfile_path}")
+print(f"Using GCP_BASE_PROJECT: {gcp_project}")
+print(f"Current working directory: {os.getcwd()}")
+
+gac_env_var = "GOOGLE_APPLICATION_CREDENTIALS"
+gac_path_from_env = os.environ.get(gac_env_var)
+print(f"Environment variable {gac_env_var} (within script): {gac_path_from_env}")
+
+if not keyfile_path:
+    print("ERROR: DBT_BIGQUERY_KEYFILE_PATH is not set in the environment for the script.")
+    sys.exit(1)
+if not gcp_project:
+    print("ERROR: GCP_BASE_PROJECT is not set in the environment for the script.")
+    sys.exit(1)
+
+try:
+    print(f"Attempting to load credentials from service account file: {keyfile_path}")
+    try:
+        with open(keyfile_path, 'r') as f:
+            keyfile_data = json.load(f)
+        print(f"Successfully read and parsed keyfile JSON. Type: {keyfile_data.get('type')}, Project ID: {keyfile_data.get('project_id')}")
+    except Exception as e_read:
+        print(f"ERROR reading/parsing keyfile {keyfile_path} directly in script: {e_read}")
+        # Still proceed to let from_service_account_file try
+
+    credentials = service_account.Credentials.from_service_account_file(keyfile_path)
+    print(f"Successfully created credentials object: {type(credentials)}")
+    if hasattr(credentials, 'valid'):
+        print(f"Credentials valid: {credentials.valid}")
+    else:
+        print("Credentials object does not have 'valid' attribute.")
+    
+    if hasattr(credentials, 'service_account_email'):
+        print(f"Credentials service account email: {credentials.service_account_email}")
+    else:
+        print("Credentials object does not have 'service_account_email' attribute.")
+
+    print(f"Attempting to create BigQuery client with project='{gcp_project}' and obtained credentials.")
+    client = bigquery.Client(project=gcp_project, credentials=credentials)
+    print(f"Successfully created BigQuery client object: {type(client)}")
+    
+    print("Attempting a simple query: SELECT 1")
+    query_job = client.query("SELECT 1 AS test_col")
+    results = query_job.result() # Waits for the query to complete
+    print("Query job completed. Iterating results:")
+    for row in results:
+        print(f"Row: {row}")
+    print("Successfully executed a simple query and got results.")
+    print(f"--- GCP Client Test Script SUCCEEDED ---")
+    sys.exit(0)
+
+except Exception as e:
+    print(f"!!! ERROR during GCP Client Test Script execution: {e}")
+    import traceback
+    traceback.print_exc()
+    print(f"--- GCP Client Test Script FAILED ---")
+    sys.exit(1)
+"""
+    gcp_test_script_path = Path("/tmp/gcp_client_test.py")
+    try:
+        gcp_test_script_path.write_text(gcp_test_script_content)
+        logger.info(f"GCP client test script written to {gcp_test_script_path}")
+
+        test_script_env = os.environ.copy()
+        # Ensure the critical env vars are definitely in the test script's environment
+        # These should already be in os.environ from the dbt_project setup
+        if os.environ.get("DBT_BIGQUERY_KEYFILE_PATH"):
+            test_script_env["DBT_BIGQUERY_KEYFILE_PATH"] = os.environ[
+                "DBT_BIGQUERY_KEYFILE_PATH"
+            ]
+        if os.environ.get("GCP_BASE_PROJECT"):
+            test_script_env["GCP_BASE_PROJECT"] = os.environ["GCP_BASE_PROJECT"]
+
+        logger.info(
+            f"Running GCP client test script with Python: {sys.executable}"
+        )
+        logger.info(
+            f"Test script env DBT_BIGQUERY_KEYFILE_PATH: {test_script_env.get('DBT_BIGQUERY_KEYFILE_PATH')}"
+        )
+        logger.info(
+            f"Test script env GCP_BASE_PROJECT: {test_script_env.get('GCP_BASE_PROJECT')}"
+        )
+
+        process_gcp_test = subprocess.run(
+            [sys.executable, str(gcp_test_script_path)],
+            capture_output=True,
+            text=True,
+            env=test_script_env,
+            cwd=str(
+                dbt.project_dir
+            ),  # Run in same CWD as dbt for consistency, though script doesn't rely on it
+            check=False,
+        )
+        logger.info("--- GCP Client Test Script STDOUT ---")
+        if process_gcp_test.stdout:
+            logger.info(process_gcp_test.stdout)
+        else:
+            logger.info("No STDOUT from GCP client test script.")
+
+        logger.info("--- GCP Client Test Script STDERR ---")
+        if process_gcp_test.stderr:
+            if process_gcp_test.returncode == 0:
+                logger.info(
+                    f"STDERR from GCP client test script (return code 0):\n{process_gcp_test.stderr}"
+                )
+            else:
+                logger.error(
+                    f"STDERR from GCP client test script (return code {process_gcp_test.returncode}):\n{process_gcp_test.stderr}"
+                )
+        else:
+            logger.info("No STDERR from GCP client test script.")
+
+        if process_gcp_test.returncode == 0:
+            logger.info("GCP client test script completed successfully.")
+        else:
+            logger.error(
+                f"GCP client test script failed with return code {process_gcp_test.returncode}."
+            )
+
+    except Exception as e_script:
+        logger.error(
+            f"An error occurred while preparing or running GCP client test script: {e_script}",
+            exc_info=True,
+        )
+    finally:
+        logger.info("--- Finished GCP Client Test Script Execution ---")
+    # --- End of GCP Client Test Script Execution ---
+
     # --- Start of dbt debug command (using subprocess) ---
     logger.info(
         "Running dbt debug via subprocess to check connection and configurations..."
@@ -326,7 +480,7 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
         # Ensure critical env vars (already validated to be in os.environ) are present
         # dbt's profiles.yml uses env_var() for these, so they need to be in the subprocess's env
         keyfile_path_from_env = os.environ.get("DBT_BIGQUERY_KEYFILE_PATH")
-        gcp_project_from_env = os.environ.get("GCP_PROJECT")
+        gcp_project_from_env = os.environ.get("GCP_BASE_PROJECT")
 
         if keyfile_path_from_env:
             sub_env["DBT_BIGQUERY_KEYFILE_PATH"] = keyfile_path_from_env
@@ -336,15 +490,16 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
             )
 
         if gcp_project_from_env:
-            sub_env["GCP_PROJECT"] = gcp_project_from_env
+            sub_env["GCP_BASE_PROJECT"] = gcp_project_from_env
         else:
             logger.warning(
-                "GCP_PROJECT not found in os.environ for subprocess."
+                "GCP_BASE_PROJECT not found in os.environ for subprocess."
             )
 
         logger.info(f"dbt executable for subprocess: {dbt_executable_path}")
         logger.info(f"dbt command for subprocess: {' '.join(command)}")
         logger.info(f"dbt project_dir for subprocess (cwd): {dbt.project_dir}")
+        logger.info(f"PATH for dbt debug subprocess: {sub_env.get('PATH')}")
 
         sensitive_keys = ["KEYFILE", "TOKEN", "PASSWORD", "SECRET"]
         logged_env_vars = {

@@ -22,7 +22,7 @@ from .helpers.data_processing import (
 
 @dlt.source(name="google_sheets")  # Explicitly name the source
 def google_spreadsheet(
-    spreadsheet_url_or_id: str = dlt.config.value,
+    position_control_sheet_id: str = dlt.config.value,
     range_names: Sequence[str] = dlt.config.value,
     credentials: Union[
         GcpOAuthCredentials, GcpServiceAccountCredentials
@@ -37,7 +37,7 @@ def google_spreadsheet(
     - Optionally, dlt resources for all sheets inside the spreadsheet and all named ranges inside the spreadsheet.
 
     Args:
-        spreadsheet_url_or_id (str): The ID or URL of the spreadsheet.
+        position_control_sheet_id (str): The ID or URL of the spreadsheet.
         range_names (Sequence[str]): A list of ranges in the spreadsheet in the format used by Google Sheets. Accepts Named Ranges and Sheets (tabs) names.
             These are the ranges to be converted into tables.
         credentials (Union[GcpServiceAccountCredentials, GcpOAuthCredentials]): GCP credentials to the account
@@ -54,7 +54,7 @@ def google_spreadsheet(
     # authenticate to the service using the helper function
     service = api_auth(credentials, max_api_retries=max_api_retries)
     # get spreadsheet id from url or id
-    spreadsheet_id = get_spreadsheet_id(spreadsheet_url_or_id)
+    spreadsheet_id = get_spreadsheet_id(position_control_sheet_id)
     all_range_names = set(range_names or [])
     # if no explicit ranges, get sheets and named ranges from metadata
     # get metadata with list of sheets and named ranges in the spreadsheet

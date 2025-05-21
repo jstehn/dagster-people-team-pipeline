@@ -4,7 +4,7 @@ log_level="WARNING"  # the system log level of dlt
 dlthub_telemetry = true
 
 [sources.position_control_pipeline]
-spreadsheet_url_or_id = "15y1M8-dlkVdDK0o9TCWPnZhgOxt9TdTbxFV8sJUNm3A"
+position_control_sheet_id = "15y1M8-dlkVdDK0o9TCWPnZhgOxt9TdTbxFV8sJUNm3A"
 
 [sources.paycom_pipeline]
 bucket_url = "gdrive://1ffPka_fg89DJ0TPJi_QWpKWynLzHtA3t"

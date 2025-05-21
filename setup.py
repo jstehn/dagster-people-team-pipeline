@@ -40,6 +40,7 @@ setup(
         "psutil",
         "psycopg2-binary",
         "pydantic",
+        "PyYAML",
         "requests",
         "streamlit",
         "tink",

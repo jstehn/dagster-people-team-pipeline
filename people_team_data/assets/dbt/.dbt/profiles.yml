@@ -8,7 +8,7 @@ default:
       location: US
       method: service-account-json
       priority: interactive
-      project: '{{ env_var(''GCP_PROJECT'') }}'
+      project: '{{ env_var(''GCP_BASE_PROJECT'') }}'
       threads: 4
       type: bigquery
   target: 'staff'

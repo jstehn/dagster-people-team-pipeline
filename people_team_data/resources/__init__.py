@@ -32,10 +32,10 @@ dbt_resource = DbtCliResource(
     profiles_dir=dbt_project.profiles_dir,
 )
 dlt_resource = DagsterDltResource()
-gcp_project_val = EnvVar("GCP_PROJECT").get_value()
+gcp_project_val = EnvVar("GCP_BASE_PROJECT").get_value()
 if not gcp_project_val:
     raise ValueError(
-        "Environment variable GCP_PROJECT is not set. This is required for GCS and BigQuery resources."
+        "Environment variable GCP_BASE_PROJECT is not set. This is required for GCS and BigQuery resources."
     )
 
 lake_resource = GCSResource(

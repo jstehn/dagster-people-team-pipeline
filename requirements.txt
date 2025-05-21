@@ -23,6 +23,7 @@ pandas
 psutil
 psycopg2-binary
 pydantic
+PyYAML
 streamlit
 requests
 tink

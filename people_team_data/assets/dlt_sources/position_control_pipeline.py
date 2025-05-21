@@ -38,7 +38,7 @@ def convert_types(
 
 @dlt.source(name="position_control_source")
 def position_control_source(
-    spreadsheet_url_or_id: str = dlt.config.value,
+    position_control_sheet_id: str = dlt.config.value,
 ):
     @dlt.resource(
         name="raw_position_control_positions",
@@ -47,7 +47,7 @@ def position_control_source(
     )
     def position_control_positions():
         data = google_spreadsheet(
-            spreadsheet_url_or_id=spreadsheet_url_or_id,
+            position_control_sheet_id=position_control_sheet_id,
             range_names=["Positions"],
             get_sheets=False,
             get_named_ranges=False,
@@ -67,7 +67,7 @@ def position_control_source(
     )
     def position_control_employees():
         data = google_spreadsheet(
-            spreadsheet_url_or_id=spreadsheet_url_or_id,
+            position_control_sheet_id=position_control_sheet_id,
             range_names=["Employees"],
             get_sheets=False,
             get_named_ranges=False,
@@ -81,7 +81,7 @@ def position_control_source(
     )
     def position_control_adjustments():
         data = google_spreadsheet(
-            spreadsheet_url_or_id=spreadsheet_url_or_id,
+            position_control_sheet_id=position_control_sheet_id,
             range_names=["Adjustments"],
             get_sheets=False,
             get_named_ranges=False,
@@ -104,7 +104,7 @@ def position_control_source(
     )
     def position_control_stipends():
         data = google_spreadsheet(
-            spreadsheet_url_or_id=spreadsheet_url_or_id,
+            position_control_sheet_id=position_control_sheet_id,
             range_names=["Stipends"],
             get_sheets=False,
             get_named_ranges=False,
@@ -122,7 +122,7 @@ def position_control_source(
     )
     def position_control_assignments():
         data = google_spreadsheet(
-            spreadsheet_url_or_id=spreadsheet_url_or_id,
+            position_control_sheet_id=position_control_sheet_id,
             range_names=["Assignments"],
             get_sheets=False,
             get_named_ranges=False,
