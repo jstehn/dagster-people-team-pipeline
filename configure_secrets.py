@@ -448,6 +448,53 @@ def process_env_mappings(project_root_dir: Path) -> bool:
     return _process_env_mapping_recursive(config_data, [])
 
 
+def export_all_secrets_to_env(secrets_json_str: Optional[str]) -> None:
+    """
+    Decodes a JSON string containing all secrets and exports them as environment variables.
+
+    Args:
+        secrets_json_str: A JSON string where keys are secret names and values are secret values.
+                          Typically sourced from GitHub Actions' `toJson(secrets)` context.
+    """
+    if not secrets_json_str:
+        logger.info(
+            "No JSON string provided for exporting all secrets (e.g., from ALL_SECRETS_JSON_FOR_ENV_EXPORT). Skipping."
+        )
+        return False
+
+    logger.info(
+        "Attempting to export all secrets from JSON string to environment variables."
+    )
+    try:
+        all_secrets = json.loads(secrets_json_str)
+        if not isinstance(all_secrets, dict):
+            logger.error(
+                f"Failed to parse ALL_SECRETS_JSON_FOR_ENV_EXPORT: Expected a JSON object (dictionary), but got {type(all_secrets)}."
+            )
+            return False
+
+        for name, value in all_secrets.items():
+            if isinstance(value, (str, int, float, bool)):
+                _set_env_var(name, str(value))
+            else:
+                logger.warning(
+                    f"Secret '{name}' has a complex type ({type(value)}) and will not be directly exported as an environment variable. "
+                    "Only string, number, or boolean values are directly exported by this function."
+                )
+        logger.info("Finished exporting secrets from JSON string.")
+        return True
+    except json.JSONDecodeError as e:
+        logger.error(
+            f"Failed to parse the JSON string from ALL_SECRETS_JSON_FOR_ENV_EXPORT. Error: {e}"
+        )
+        return False
+    except Exception as e:
+        logger.error(
+            f"An unexpected error occurred while exporting all secrets from JSON. Error: {e}"
+        )
+        return False
+
+
 # --- Main Execution ---
 
 
@@ -470,7 +517,12 @@ def main() -> int:
     # Step 2: Process environment mappings from YAML
     mapping_success = process_env_mappings(project_root)
 
-    if keyfile_success and mapping_success:
+    # Step 3: Export all secrets to environment variables
+    secrets_export_success = export_all_secrets_to_env(
+        os.getenv("ALL_SECRETS_JSON_FOR_ENV_EXPORT")
+    )
+
+    if keyfile_success and mapping_success and secrets_export_success:
         logger.info(
             "--- Secrets and Environment Configuration Script Completed Successfully ---"
         )
