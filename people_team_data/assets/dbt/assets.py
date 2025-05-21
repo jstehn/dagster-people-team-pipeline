@@ -1,9 +1,11 @@
 import json  # Added for keyfile JSON validation
 import os  # Added for environment variables
+import subprocess  # Added for direct dbt executable call
 from pathlib import Path  # Added for path operations
 
 from dagster import AssetExecutionContext, get_dagster_logger
 from dagster_dbt import DbtCliResource, dbt_assets
+from dagster_dbt.errors import DagsterDbtCliRuntimeError  # Added import
 
 from .project import (
     KEYFILE_VALIDATION_ERROR_MESSAGE,
@@ -293,74 +295,93 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
         logger.info("--- End of DBT Configuration Debugging ---")
         # --- End of Added Debug Logging ---
 
-    # --- Start of dbt debug command ---
-    logger.info("Running dbt debug to check connection and configurations...")
-    dbt_debug_cli_invocation = (
-        None  # Initialize to ensure it's in scope for finally
+    # --- Start of dbt debug command (using subprocess) ---
+    logger.info(
+        "Running dbt debug via subprocess to check connection and configurations..."
     )
     try:
-        # For dbt debug, explicitly pass empty/None for selection args
-        # to avoid issues with unsupported flags like --select.
-        dbt_debug_cli_invocation = dbt.cli(
-            ["debug"],
-            context=context,
-            select=[],
-            exclude=[],
-            selector_name=None,
+        dbt_executable = dbt.executable
+
+        # Base command
+        command = [
+            dbt_executable,
+            "debug",
+            "--no-version-check",  # Often useful
+            "--project-dir",
+            str(dbt.project_dir),  # Explicitly set project directory
+        ]
+
+        # Conditionally add other dbt arguments if configured on the DbtCliResource
+        if dbt.profiles_dir:
+            command.extend(["--profiles-dir", str(dbt.profiles_dir)])
+        if dbt.profile:
+            command.extend(["--profile", dbt.profile])
+        if dbt.target:
+            command.extend(["--target", dbt.target])
+
+        logger.info(f"dbt executable for subprocess: {dbt_executable}")
+        logger.info(f"dbt command for subprocess: {' '.join(command)}")
+        # Use dbt.project_dir from the DbtCliResource for cwd
+        logger.info(f"dbt project_dir for subprocess (cwd): {dbt.project_dir}")
+
+        # Log a sample of the specific env vars being passed from DbtCliResource
+        # Be cautious about logging sensitive env vars if any are present
+        process = subprocess.run(
+            command,
+            cwd=str(
+                dbt.project_dir  # Use DbtCliResource's project_dir for cwd
+            ),
+            capture_output=True,
+            text=True,
+            env=os.environ,  # Use the merged environment
+            check=False,
         )
-        logger.info(
-            f"Executing dbt CLI command (debug): {' '.join(dbt_debug_cli_invocation.process.args)}"
-        )
 
-        # Use stream_raw_events for more detailed dbt output
-        logger.info("--- Raw dbt debug events ---")
-        has_streamed_debug_output = False
-        for raw_event_message in dbt_debug_cli_invocation.stream_raw_events():
-            # raw_event_message is a DbtCliEventMessage object
-            logger.info(f"Raw dbt debug event: {raw_event_message.raw_event}")
-            has_streamed_debug_output = True
-        if not has_streamed_debug_output:
-            logger.info(
-                "No raw events streamed from dbt debug. This might indicate an early failure or no output."
-            )
-        logger.info("--- Finished raw dbt debug events ---")
-
-        dbt_debug_cli_invocation.wait()  # Ensure debug command completes
-
-        if dbt_debug_cli_invocation.is_successful():
-            logger.info("dbt debug command completed successfully.")
+        logger.info("--- dbt debug (subprocess) STDOUT ---")
+        if process.stdout:
+            logger.info(process.stdout)
         else:
-            logger.error("dbt debug command failed.")
-            dbt_error = dbt_debug_cli_invocation.get_error()
-            if dbt_error:
-                logger.error(
-                    f"Error details from dbt debug invocation: {dbt_error}"
+            logger.info("No STDOUT from dbt debug subprocess.")
+
+        logger.info("--- dbt debug (subprocess) STDERR ---")
+        if process.stderr:
+            # dbt debug often prints successful checks to stderr, so log as info unless return code is non-zero
+            if process.returncode == 0:
+                logger.info(
+                    f"STDERR from dbt debug (return code 0):\n{process.stderr}"
                 )
             else:
                 logger.error(
-                    "dbt debug invocation failed, but get_error() returned None. Check raw event logs for more details."
+                    f"STDERR from dbt debug (return code {process.returncode}):\n{process.stderr}"
                 )
+        else:
+            logger.info("No STDERR from dbt debug subprocess.")
+
+        if process.returncode == 0:
+            logger.info("dbt debug (subprocess) completed successfully.")
+        else:
+            logger.error(
+                f"dbt debug (subprocess) failed with return code {process.returncode}."
+            )
             # Optionally, raise an exception or prevent build if debug fails
-            # raise RuntimeError("dbt debug command failed, halting execution.")
+            # raise RuntimeError(f"dbt debug (subprocess) failed. Check logs.")
+
     except Exception as e:
         logger.error(
-            f"An error occurred while preparing or running dbt debug: {e}"
+            f"An error occurred while preparing or running dbt debug (subprocess): {e}",
+            exc_info=True,
         )
         # Optionally, re-raise or handle as needed
         # raise
     finally:
-        logger.info("--- Finished dbt debug command execution attempt ---")
-        if dbt_debug_cli_invocation:
-            logger.info(
-                f"dbt debug target_path: {dbt_debug_cli_invocation.target_path}"
-            )
-            # dbt's main log file is usually in <project_dir>/logs/dbt.log
-            # The target_path might contain specific run artifacts or sometimes a copy/link if log-path is configured there.
-            # For dbt's own structured logs (if log-format is json), they might go to a file in target_path/logs or a specified log-path.
+        logger.info(
+            "--- Finished dbt debug (subprocess) command execution attempt ---"
+        )
 
     # Attempt to read dbt.log from the project's standard logs directory
+    # This is a general check, the run-specific log is more critical for failures.
     logger.info(
-        "--- Attempting to read dbt.log from project logs directory ---"
+        "--- Attempting to read general dbt.log from project logs directory ---"
     )
     try:
         # dbt.project_dir should be the correct root of the dbt project
@@ -385,14 +406,71 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
 
     logger.info("Starting dbt build process...")
 
-    dbt_build_cli_invocation = dbt.cli(["build", "--debug"], context=context)
+    dbt_build_cli_invocation = None  # Initialize
+    try:
+        dbt_build_cli_invocation = dbt.cli(
+            ["build", "--debug"], context=context
+        )
 
-    logger.info(
-        f"Executing dbt CLI command: {' '.join(dbt_build_cli_invocation.process.args)}"
-    )
+        logger.info(
+            f"Executing dbt CLI command: {' '.join(dbt_build_cli_invocation.process.args)}"
+        )
 
-    for event in dbt_build_cli_invocation.stream():
-        logger.info(f"dbt event: {event}")
-        yield event
+        for event in dbt_build_cli_invocation.stream():
+            logger.info(f"dbt event: {event}")
+            yield event
 
-    logger.info("Finished dbt build process.")
+        logger.info("Finished dbt build process.")
+
+    except DagsterDbtCliRuntimeError as e:
+        logger.error(
+            f"dbt build command failed with DagsterDbtCliRuntimeError: {e}"
+        )
+        if dbt_build_cli_invocation:
+            log_path = dbt_build_cli_invocation.target_path / "dbt.log"
+            logger.info(
+                f"Attempting to read dbt build specific log from: {log_path}"
+            )
+            if log_path.exists() and log_path.is_file():
+                try:
+                    log_content = log_path.read_text()
+                    logger.info(
+                        f"Contents of build-specific dbt.log ({log_path}):\\n{log_content}"
+                    )
+                except Exception as log_read_e:
+                    logger.error(
+                        f"Could not read build-specific dbt.log from {log_path}: {log_read_e}"
+                    )
+            else:
+                logger.warning(
+                    f"Build-specific dbt.log not found or is not a file at: {log_path}. Error object log_path: {getattr(e, 'log_path', 'N/A')}"
+                )
+        else:
+            logger.warning(
+                "dbt_build_cli_invocation was not initialized before the error occurred."
+            )
+        raise  # Re-raise the exception after logging
+    except Exception as e_general:
+        logger.error(
+            f"An unexpected error occurred during dbt build: {e_general}"
+        )
+        if dbt_build_cli_invocation:
+            log_path = dbt_build_cli_invocation.target_path / "dbt.log"
+            logger.info(
+                f"Attempting to read dbt build specific log (general exception) from: {log_path}"
+            )
+            if log_path.exists() and log_path.is_file():
+                try:
+                    log_content = log_path.read_text()
+                    logger.info(
+                        f"Contents of build-specific dbt.log ({log_path}) (general exception):\\n{log_content}"
+                    )
+                except Exception as log_read_e:
+                    logger.error(
+                        f"Could not read build-specific dbt.log from {log_path} (general exception): {log_read_e}"
+                    )
+            else:
+                logger.warning(
+                    f"Build-specific dbt.log not found or is not a file at: {log_path} (general exception)."
+                )
+        raise  # Re-raise the exception
