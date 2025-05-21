@@ -300,7 +300,7 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
         "Running dbt debug via subprocess to check connection and configurations..."
     )
     try:
-        dbt_executable_path = dbt.dbt_executable  # Corrected attribute
+        dbt_executable_path = "dbt"
 
         # Base command
         command = [
