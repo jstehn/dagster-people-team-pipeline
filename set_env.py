@@ -612,3 +612,5 @@ def configure_secrets() -> int:
 
 if __name__ == "__main__":
     sys.exit(configure_secrets())
+elif not secrets_configured:
+    configure_secrets()
