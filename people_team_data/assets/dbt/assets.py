@@ -1,9 +1,9 @@
 import json  # Added for keyfile JSON validation
 import os  # Added for environment variables
 import subprocess  # Added for direct dbt executable call
-import sys  # Added for GCP client test script
 from pathlib import Path  # Added for path operations
 
+import yaml  # Added for parsing profiles.yml
 from dagster import AssetExecutionContext, get_dagster_logger
 from dagster_dbt import DbtCliResource, dbt_assets
 from dagster_dbt.errors import DagsterDbtCliRuntimeError  # Added import
@@ -67,11 +67,6 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
 
     # Log Environment Variables
     logger.info("--- Relevant Environment Variables ---")
-    keyfile_env_var = "DBT_BIGQUERY_KEYFILE_PATH"
-    keyfile_path_from_env = os.environ.get(keyfile_env_var)
-    logger.info(
-        f"Environment variable {keyfile_env_var}: {keyfile_path_from_env}"
-    )
 
     gcp_project_env_var = "GCP_BASE_PROJECT"
     gcp_project_from_env = os.environ.get(gcp_project_env_var)
@@ -88,12 +83,140 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
         f"Current process PATH environment variable: {current_path_env_var}"
     )
 
-    # Log and Validate Keyfile
-    logger.info("--- GCP Keyfile Validation (from env var) ---")
-    if keyfile_path_from_env:
-        keyfile_actual_path = Path(keyfile_path_from_env).resolve()
+    # Log and Validate Keyfile from profiles.yml
+    logger.info("--- GCP Keyfile Validation (from profiles.yml) ---")
+    keyfile_path_from_profiles = None
+    profiles_yml_for_keyfile_path = None
+
+    if hasattr(dbt_project, "profiles_dir") and dbt_project.profiles_dir:
+        profiles_yml_for_keyfile_path = (
+            Path(dbt_project.profiles_dir) / "profiles.yml"
+        )
         logger.info(
-            f"Attempting to read keyfile from resolved path: {keyfile_actual_path}"
+            f"Attempting to load profiles.yml for keyfile from: {profiles_yml_for_keyfile_path}"
+        )
+        if profiles_yml_for_keyfile_path.exists():
+            try:
+                with open(profiles_yml_for_keyfile_path, "r") as f:
+                    profiles_data = yaml.safe_load(f)
+
+                # Determine profile and target for keyfile lookup
+                profile_to_use = getattr(dbt, "profile", None)
+                if not profile_to_use:
+                    profile_to_use = getattr(dbt_project, "profile", None)
+                if not profile_to_use:
+                    # Fallback: use 'default' if it exists, or the first profile name if only one, else 'default'
+                    if profiles_data and "default" in profiles_data:
+                        profile_to_use = "default"
+                    elif profiles_data and len(profiles_data) == 1:
+                        profile_to_use = list(profiles_data.keys())[0]
+                        logger.info(
+                            f"Using the only profile found in profiles.yml: '{profile_to_use}'"
+                        )
+                    else:
+                        profile_to_use = (
+                            "default"  # Defaulting as per example structure
+                        )
+                        logger.warning(
+                            f"Profile name not determined from dbt/dbt_project context, defaulting to '{profile_to_use}' for keyfile lookup."
+                        )
+                logger.info(
+                    f"Using profile name '{profile_to_use}' for keyfile lookup."
+                )
+
+                target_to_use = getattr(dbt, "target", None)
+                if not target_to_use:
+                    target_to_use = getattr(dbt_project, "target", None)
+                if not target_to_use:
+                    # Try to get default target from the determined profile in profiles.yml
+                    if (
+                        profiles_data
+                        and profile_to_use in profiles_data
+                        and isinstance(profiles_data[profile_to_use], dict)
+                        and profiles_data[profile_to_use].get("target")
+                    ):
+                        target_to_use = profiles_data[profile_to_use]["target"]
+                        logger.info(
+                            f"Using target '{target_to_use}' from profile '{profile_to_use}' in profiles.yml."
+                        )
+                    else:
+                        # Fallback: use 'staff' as per example, or could be the first output key
+                        target_to_use = (
+                            "staff"  # Defaulting as per example structure
+                        )
+                        logger.warning(
+                            f"Target name not determined from dbt/dbt_project context or profile, defaulting to '{target_to_use}' for keyfile lookup."
+                        )
+                logger.info(
+                    f"Using target name '{target_to_use}' for keyfile lookup."
+                )
+
+                keyfile_relative_path_str = None
+                if (
+                    profiles_data
+                    and profile_to_use in profiles_data
+                    and isinstance(profiles_data[profile_to_use], dict)
+                    and "outputs" in profiles_data[profile_to_use]
+                    and isinstance(
+                        profiles_data[profile_to_use]["outputs"], dict
+                    )
+                    and target_to_use
+                    in profiles_data[profile_to_use]["outputs"]
+                    and isinstance(
+                        profiles_data[profile_to_use]["outputs"][target_to_use],
+                        dict,
+                    )
+                    and "keyfile"
+                    in profiles_data[profile_to_use]["outputs"][target_to_use]
+                ):
+                    keyfile_relative_path_str = profiles_data[profile_to_use][
+                        "outputs"
+                    ][target_to_use]["keyfile"]
+                    logger.info(
+                        f"Found keyfile path in profiles.yml ('{profile_to_use}' -> 'outputs' -> '{target_to_use}' -> 'keyfile'): {keyfile_relative_path_str}"
+                    )
+                else:
+                    logger.warning(
+                        f"Could not find 'keyfile' at expected path '{profile_to_use}.outputs.{target_to_use}.keyfile' in {profiles_yml_for_keyfile_path}"
+                    )
+
+                if keyfile_relative_path_str:
+                    # The keyfile path in profiles.yml is relative to the directory of profiles.yml
+                    keyfile_path_from_profiles = (
+                        Path(dbt_project.profiles_dir)
+                        / keyfile_relative_path_str
+                    ).resolve()
+                    logger.info(
+                        f"Resolved keyfile path from profiles.yml: {keyfile_path_from_profiles}"
+                    )
+                else:
+                    logger.warning(
+                        f"Could not extract keyfile path string from {profiles_yml_for_keyfile_path} for profile '{profile_to_use}' and target '{target_to_use}'."
+                    )
+
+            except yaml.YAMLError as ye:
+                logger.error(
+                    f"Error parsing YAML from {profiles_yml_for_keyfile_path}: {ye}"
+                )
+            except Exception as e:
+                logger.error(
+                    f"Could not read or parse {profiles_yml_for_keyfile_path} for keyfile: {e}",
+                    exc_info=True,
+                )
+        else:
+            logger.warning(
+                f"profiles.yml not found at: {profiles_yml_for_keyfile_path} (for keyfile extraction)"
+            )
+    else:
+        logger.warning(
+            "dbt_project.profiles_dir is not set; cannot locate profiles.yml to extract keyfile."
+        )
+
+    # Validate the keyfile obtained from profiles.yml
+    if keyfile_path_from_profiles:
+        keyfile_actual_path = keyfile_path_from_profiles  # Already resolved
+        logger.info(
+            f"Attempting to read keyfile from resolved profiles.yml path: {keyfile_actual_path}"
         )
         if keyfile_actual_path.exists() and keyfile_actual_path.is_file():
             try:
@@ -117,11 +240,11 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
                 )
         else:
             logger.warning(
-                f"Keyfile not found or is not a file at resolved path: {keyfile_actual_path}"
+                f"Keyfile not found or is not a file at resolved path from profiles.yml: {keyfile_actual_path}"
             )
     else:
         logger.warning(
-            f"Environment variable {keyfile_env_var} is not set. Cannot attempt to read or validate keyfile."
+            "Keyfile path not found/extracted from profiles.yml. Cannot attempt to read or validate keyfile."
         )
 
     # Log DbtCliResource attributes
@@ -283,150 +406,6 @@ def dbt_models_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
     logger.info("--- End of DBT Configuration Debugging ---")
     # --- End of Added Debug Logging ---
 
-    # --- Start of GCP Client Test Script Execution ---
-    logger.info("--- Preparing and running GCP Client Test Script ---")
-    gcp_test_script_content = """
-import sys
-from google.cloud import bigquery
-from google.oauth2 import service_account
-import os
-import json
-
-print(f"Python executable for this script: {sys.executable}")
-print(f"Python version for this script: {sys.version}")
-
-keyfile_path = os.environ.get("DBT_BIGQUERY_KEYFILE_PATH")
-gcp_project = os.environ.get("GCP_BASE_PROJECT")
-
-print(f"--- GCP Client Test Script ---")
-print(f"Using DBT_BIGQUERY_KEYFILE_PATH: {keyfile_path}")
-print(f"Using GCP_BASE_PROJECT: {gcp_project}")
-print(f"Current working directory: {os.getcwd()}")
-
-gac_env_var = "GOOGLE_APPLICATION_CREDENTIALS"
-gac_path_from_env = os.environ.get(gac_env_var)
-print(f"Environment variable {gac_env_var} (within script): {gac_path_from_env}")
-
-if not keyfile_path:
-    print("ERROR: DBT_BIGQUERY_KEYFILE_PATH is not set in the environment for the script.")
-    sys.exit(1)
-if not gcp_project:
-    print("ERROR: GCP_BASE_PROJECT is not set in the environment for the script.")
-    sys.exit(1)
-
-try:
-    print(f"Attempting to load credentials from service account file: {keyfile_path}")
-    try:
-        with open(keyfile_path, 'r') as f:
-            keyfile_data = json.load(f)
-        print(f"Successfully read and parsed keyfile JSON. Type: {keyfile_data.get('type')}, Project ID: {keyfile_data.get('project_id')}")
-    except Exception as e_read:
-        print(f"ERROR reading/parsing keyfile {keyfile_path} directly in script: {e_read}")
-        # Still proceed to let from_service_account_file try
-
-    credentials = service_account.Credentials.from_service_account_file(keyfile_path)
-    print(f"Successfully created credentials object: {type(credentials)}")
-    if hasattr(credentials, 'valid'):
-        print(f"Credentials valid: {credentials.valid}")
-    else:
-        print("Credentials object does not have 'valid' attribute.")
-    
-    if hasattr(credentials, 'service_account_email'):
-        print(f"Credentials service account email: {credentials.service_account_email}")
-    else:
-        print("Credentials object does not have 'service_account_email' attribute.")
-
-    print(f"Attempting to create BigQuery client with project='{gcp_project}' and obtained credentials.")
-    client = bigquery.Client(project=gcp_project, credentials=credentials)
-    print(f"Successfully created BigQuery client object: {type(client)}")
-    
-    print("Attempting a simple query: SELECT 1")
-    query_job = client.query("SELECT 1 AS test_col")
-    results = query_job.result() # Waits for the query to complete
-    print("Query job completed. Iterating results:")
-    for row in results:
-        print(f"Row: {row}")
-    print("Successfully executed a simple query and got results.")
-    print(f"--- GCP Client Test Script SUCCEEDED ---")
-    sys.exit(0)
-
-except Exception as e:
-    print(f"!!! ERROR during GCP Client Test Script execution: {e}")
-    import traceback
-    traceback.print_exc()
-    print(f"--- GCP Client Test Script FAILED ---")
-    sys.exit(1)
-"""
-    gcp_test_script_path = Path("/tmp/gcp_client_test.py")
-    try:
-        gcp_test_script_path.write_text(gcp_test_script_content)
-        logger.info(f"GCP client test script written to {gcp_test_script_path}")
-
-        test_script_env = os.environ.copy()
-        # Ensure the critical env vars are definitely in the test script's environment
-        # These should already be in os.environ from the dbt_project setup
-        if os.environ.get("DBT_BIGQUERY_KEYFILE_PATH"):
-            test_script_env["DBT_BIGQUERY_KEYFILE_PATH"] = os.environ[
-                "DBT_BIGQUERY_KEYFILE_PATH"
-            ]
-        if os.environ.get("GCP_BASE_PROJECT"):
-            test_script_env["GCP_BASE_PROJECT"] = os.environ["GCP_BASE_PROJECT"]
-
-        logger.info(
-            f"Running GCP client test script with Python: {sys.executable}"
-        )
-        logger.info(
-            f"Test script env DBT_BIGQUERY_KEYFILE_PATH: {test_script_env.get('DBT_BIGQUERY_KEYFILE_PATH')}"
-        )
-        logger.info(
-            f"Test script env GCP_BASE_PROJECT: {test_script_env.get('GCP_BASE_PROJECT')}"
-        )
-
-        process_gcp_test = subprocess.run(
-            [sys.executable, str(gcp_test_script_path)],
-            capture_output=True,
-            text=True,
-            env=test_script_env,
-            cwd=str(
-                dbt.project_dir
-            ),  # Run in same CWD as dbt for consistency, though script doesn't rely on it
-            check=False,
-        )
-        logger.info("--- GCP Client Test Script STDOUT ---")
-        if process_gcp_test.stdout:
-            logger.info(process_gcp_test.stdout)
-        else:
-            logger.info("No STDOUT from GCP client test script.")
-
-        logger.info("--- GCP Client Test Script STDERR ---")
-        if process_gcp_test.stderr:
-            if process_gcp_test.returncode == 0:
-                logger.info(
-                    f"STDERR from GCP client test script (return code 0):\n{process_gcp_test.stderr}"
-                )
-            else:
-                logger.error(
-                    f"STDERR from GCP client test script (return code {process_gcp_test.returncode}):\n{process_gcp_test.stderr}"
-                )
-        else:
-            logger.info("No STDERR from GCP client test script.")
-
-        if process_gcp_test.returncode == 0:
-            logger.info("GCP client test script completed successfully.")
-        else:
-            logger.error(
-                f"GCP client test script failed with return code {process_gcp_test.returncode}."
-            )
-
-    except Exception as e_script:
-        logger.error(
-            f"An error occurred while preparing or running GCP client test script: {e_script}",
-            exc_info=True,
-        )
-    finally:
-        logger.info("--- Finished GCP Client Test Script Execution ---")
-    # --- End of GCP Client Test Script Execution ---
-
     # --- Start of dbt debug command (using subprocess) ---
     logger.info(
         "Running dbt debug via subprocess to check connection and configurations..."
@@ -454,18 +433,6 @@ except Exception as e:
         # Prepare environment for subprocess
         # Start with a copy of the current environment
         sub_env = os.environ.copy()
-
-        # Ensure critical env vars (already validated to be in os.environ) are present
-        # dbt's profiles.yml uses env_var() for these, so they need to be in the subprocess's env
-        keyfile_path_from_env = os.environ.get("DBT_BIGQUERY_KEYFILE_PATH")
-        gcp_project_from_env = os.environ.get("GCP_BASE_PROJECT")
-
-        if keyfile_path_from_env:
-            sub_env["DBT_BIGQUERY_KEYFILE_PATH"] = keyfile_path_from_env
-        else:
-            logger.warning(
-                "DBT_BIGQUERY_KEYFILE_PATH not found in os.environ for subprocess."
-            )
 
         if gcp_project_from_env:
             sub_env["GCP_BASE_PROJECT"] = gcp_project_from_env
