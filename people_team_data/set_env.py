@@ -1,4 +1,3 @@
-# /workspaces/PeopleTeamPipeline/configure_secrets.py
 """
 Handles the setup of secrets and environment variables for the project.
 
