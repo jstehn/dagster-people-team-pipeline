@@ -1,14 +1,10 @@
 default:
   outputs:
     staff:
-      dataset: staff
-      job_execution_timeout_seconds: 300
-      job_retries: 1
-      keyfile: "../../../.secrets/gcp_bigquery.json"
-      location: US
-      method: service-account-json
-      priority: interactive
-      project: "{{ env_var('GCP_BASE_PROJECT') }}"
-      threads: 4
       type: bigquery
+      method: service-account
+      project: calibrate-data
+      dataset: staff
+      threads: 4
+      keyfile: '../../.secrets/gcp_bigquery.json'
   target: 'staff'
