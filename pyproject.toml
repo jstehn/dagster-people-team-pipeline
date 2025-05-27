@@ -39,7 +39,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "dagster-webserver", 
+    "dagster-webserver",
     "pytest",
     "black",
     "isort",
@@ -63,4 +63,3 @@ target-version = ['py312']
 
 [tool.isort]
 profile = "black"
-

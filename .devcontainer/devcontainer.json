@@ -1,15 +1,8 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/postgres
 {
     "name": "Python 3 & PostgreSQL",
     "dockerComposeFile": "docker-compose.yaml",
     "service": "app",
     "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-    // Features to add to the dev container. More info: https://containers.dev/features.
-    // "features": {},
-
-    // Use 'forwardPorts' to make a list of ports inside the container available locally.
-    // This can be used to network with other containers or the host.
     "forwardPorts": [3000, 5000, 5432],
     "customizations": {
         "vscode": {
@@ -31,44 +24,15 @@
                 "bierner.markdown-mermaid",
                 "mechatroner.rainbow-csv",
                 "adpyke.vscode-sql-formatter",
-                "rjmacarthy.twinny",
                 "ms-vscode.git",
                 "charliermarsh.ruff",
                 "innoverio.vscode-dbt-power-user"
             ],
             "settings": {
-                "sqltools.connections": [
-                    {
-                        "name": "Container database",
-                        "driver": "PostgreSQL",
-                        "previewLimit": 50,
-                        "server": "localhost",
-                        "port": 5432,
-                        "database": "postgres",
-                        "username": "postgres",
-                        "password": "postgres"
-                    }
-                ],
                 "git.userEmail": "jack@caliberschools.org",
                 "git.userName": "Jack Stehn"
             }
         }
     },
-    // Use 'postCreateCommand' to run commands after the container is created.
-    // "postCreateCommand": "pip install --user -r requirements.txt",
-
-    // Configure tool-specific properties.
-    // "customizations": {},
-
-    // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-    // "remoteUser": "root"
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "python -m pip install --upgrade pip && pip install -e \".[dev]\""
-
-	// Configure tool-specific properties.
-	// "customizations": {},
-
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	//"remoteUser": "root"
+    "postCreateCommand": "pre-commit install && pre-commit autoupdate && detect-secrets scan .secrets.baseline && python -m pip install --upgrade pip && pip install -e \".[dev]\""
 }

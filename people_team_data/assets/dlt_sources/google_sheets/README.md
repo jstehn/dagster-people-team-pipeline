@@ -88,7 +88,7 @@ def get_named_ranges():
     )
 
     # do not use decompose to run `google_spreadsheet` in single task
-    tasks.add_run(pipeline, google_spreadsheet("1HhWHjqouQnnCIZAFa2rL6vT91YRN8aIhts22SUUR580"), decompose="none", trigger_rule="all_done", retries=0, provide_context=True)
+    tasks.add_run(pipeline, google_spreadsheet("sheet_id"), decompose="none", trigger_rule="all_done", retries=0, provide_context=True)
 ```
 
 ## Setup credentials

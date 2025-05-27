@@ -3,7 +3,7 @@
 ) }}
 
 with bamboohr as (
-    select 
+    select
         employee_id,
         first_name as bamboohr_first_name,
         last_name as bamboohr_last_name,
@@ -20,7 +20,7 @@ with bamboohr as (
     from {{ ref('stg_bamboohr') }}
 ),
 paycom as (
-    select 
+    select
         employee_id,
         legal_firstname as paycom_first_name,
         legal_lastname as paycom_last_name,

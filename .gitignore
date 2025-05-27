@@ -22,4 +22,4 @@ scratch*
 *logs
 *keyfile.json
 *.ipynb
-*.secrets*
+*.secrets
