@@ -20,7 +20,6 @@ google-api-python-client
 gspread
 isort
 pandas
-pre-commit
 psutil
 psycopg2-binary
 pydantic
