@@ -1,10 +1,12 @@
 import logging
 import time
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, Iterator, List, Union
 
 import dlt
+from dlt.sources import DltResource
 from dlt.sources.helpers.rest_client.auth import HttpBasicAuth
-from dlt.sources.rest_api import RESTAPIConfig, rest_api_source
+from dlt.sources.rest_api import rest_api_source
+from dlt.sources.rest_api.typing import RESTAPIConfig
 
 from .bamboohr.schema import get_bamboohr_fields
 
@@ -26,40 +28,55 @@ def batch_iterator(lst: List[Any], batch_size: int):
         yield lst[i : i + batch_size]
 
 
-def is_valid_response(data: Iterator[Dict[str, Any]]) -> bool:
+def is_valid_response(
+    data: Union[Iterator[Dict[str, Any]], DltResource, List[Dict[str, Any]]],
+) -> bool:
     """
     Check if the response data is valid.
 
     Args:
-        data: Iterator of response data
+        data: Data to validate - can be an Iterator, DltResource, or List of dictionaries
 
     Returns:
         bool: True if data appears valid, False if error detected
     """
     try:
-        # Convert iterator to list to inspect it
-        data_list = list(data)
+        items = list(data)
 
-        # Check if data is empty
-        if not data_list:
+        # Check if we got an empty response
+        if not items:
+            logging.warning("Empty response received")
             return False
 
-        # Check first record for error indicators
-        first_record = data_list[0] if data_list else {}
-        if "error" in first_record or "errors" in first_record:
-            return False
+        # Check for error messages in the response
+        for item in items:
+            if not isinstance(item, dict):
+                logging.warning(f"Expected dictionary item, got {type(item)}")
+                continue
 
-        # If we got here, data looks valid
+            # Check for common API error patterns
+            if "error" in item:
+                logging.error(f"Error found in response: {item.get('error')}")
+                return False
+
+            if item.get("success") is False:
+                logging.error(f"Response indicates failure: {item}")
+                return False
+
+            # Check for empty data in expected fields (customize this based on your API)
+            if "data" in item and not item["data"]:
+                logging.warning("Response contains empty data field")
+
         return True
 
     except Exception as e:
-        logging.error("Error checking response validity: %s", str(e))
+        logging.error(f"Error validating response: {str(e)}")
         return False
 
 
 def process_batch_with_retry(
     config: RESTAPIConfig, batch_name: str, retry_count: int = 0
-) -> Iterator[Dict[str, Any]] | None:
+) -> DltResource | None:
     """
     Process a batch of fields with retry logic.
 

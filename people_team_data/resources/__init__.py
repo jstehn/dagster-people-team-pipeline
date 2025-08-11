@@ -15,18 +15,14 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
-# --- End of logging configuration ---
 
-# Define the path to the centrally managed keyfile
-# This keyfile is expected to be created by setup.py in people_team_data/.secrets/
-# Path(__file__).parent is people_team_data/resources
-# Path(__file__).parent.parent is people_team_data
-BIGQUERY_KEYFILE_NAME = "gcp_bigquery.json"  # The primary keyfile
+# -- Configure paths --
+BIGQUERY_KEYFILE_NAME = "gcp_bigquery.json"
 bigquery_keyfile_path = (
     Path(__file__).parent.parent / ".secrets" / BIGQUERY_KEYFILE_NAME
 ).resolve()
 
-# Define resources directly
+# -- Configure resources --
 dbt_resource = DbtCliResource(
     project_dir=dbt_project,
     profiles_dir=dbt_project.profiles_dir,
@@ -37,11 +33,8 @@ if not gcp_project_val:
     raise ValueError(
         "Environment variable GCP_BASE_PROJECT is not set. This is required for GCS and BigQuery resources."
     )
-
-lake_resource = GCSResource(
-    bucket="pipeline_data_raw", project=gcp_project_val
-)  # project directly for GCS
-warehouse_resource = BigQueryResource(project=gcp_project_val, dataset="prod")
+lake_resource = GCSResource(project=gcp_project_val)
+warehouse_resource = BigQueryResource(project=gcp_project_val)
 
 
 # Collection of all resources for easy import in definitions.py
