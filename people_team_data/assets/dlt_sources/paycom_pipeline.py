@@ -13,7 +13,10 @@ def paycom_source(
     )
     def latest_csv():
         # Create the filesystem source using the provided bucket_url and file_glob.
-        fs_source = filesystem(bucket_url=bucket_url, file_glob=file_glob)
+        fs_source = filesystem(
+            bucket_url=bucket_url,
+            file_glob=file_glob
+        )
         # Apply an incremental hint so only new or updated files are processed.
         fs_source.apply_hints(
             incremental=dlt.sources.incremental("modification_date")

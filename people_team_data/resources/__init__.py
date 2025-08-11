@@ -1,9 +1,11 @@
 import logging  # Added logging
+import os
 from pathlib import Path  # Added Path
 
 from dagster import EnvVar, InitResourceContext, resource  # noqa: F401
 from dagster_dbt import DbtCliResource
 from dagster_dlt import DagsterDltResource
+from dagster_duckdb import DuckDBResource
 from dagster_gcp import BigQueryResource, GCSResource
 
 from ..assets.dbt.project import dbt_project
@@ -34,8 +36,17 @@ if not gcp_project_val:
         "Environment variable GCP_BASE_PROJECT is not set. This is required for GCS and BigQuery resources."
     )
 lake_resource = GCSResource(project=gcp_project_val)
-warehouse_resource = BigQueryResource(project=gcp_project_val)
-
+if os.getenv("DAGSTER_ENV", "production").lower() in [
+    "dev",
+    "development",
+    "local",
+]:
+    warehouse_resource = BigQueryResource(project=gcp_project_val)
+else:
+    warehouse_resource = DuckDBResource(
+        database="data/duckdb/dev.duckdb",
+        threads=4,
+    )
 
 # Collection of all resources for easy import in definitions.py
 all_resources = {

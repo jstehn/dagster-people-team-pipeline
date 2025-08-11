@@ -5,6 +5,7 @@ dagster-cloud
 dagster-cloud-cli
 dagster-dbt
 dagster-dlt
+dagster-duckdb
 dagster-gcp
 dagster-gcp-pandas
 dagster-graphql
@@ -13,8 +14,10 @@ dagster-pipes
 dagster-webserver
 dbt
 dbt-bigquery
+dbt-duckdb
 dbt-python
-dlt[bigquery,filesystem,sqlalchemy]
+dlt[bigquery,filesystem,sqlalchemy,duckdb]
+duckdb
 google-cloud-bigquery-storage
 google-api-python-client
 gspread

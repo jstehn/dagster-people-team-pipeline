@@ -23,3 +23,5 @@ scratch*
 *keyfile.json
 *.ipynb
 *.secrets
+*.duckdb
+*.bak

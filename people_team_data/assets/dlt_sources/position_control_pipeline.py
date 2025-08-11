@@ -20,6 +20,24 @@ def ensure_float(value: Any) -> float | None:
         return None
 
 
+def is_valid_row(row: Dict[str, Any], primary_key: str) -> bool:
+    """
+    Check if a row is valid (not empty and not a duplicate header)
+
+    Args:
+        row: The row data dictionary
+        primary_key: The primary key field name to check
+
+    Returns:
+        True if the row is valid, False otherwise
+    """
+    return (
+        row
+        and row.get(primary_key) is not None
+        and row[primary_key] != primary_key
+    )
+
+
 def convert_types(
     row: Dict[str, Any], conversions: Dict[str, callable]
 ) -> Dict[str, Any]:
@@ -57,7 +75,7 @@ def position_control_source(
             "Position_Count": ensure_str,
         }
         for row in data:
-            if row.get("Position_ID") is not None:
+            if is_valid_row(row, "Position_ID"):
                 yield convert_types(row, conversions)
 
     @dlt.resource(
@@ -72,7 +90,9 @@ def position_control_source(
             get_sheets=False,
             get_named_ranges=False,
         )
-        yield from (row for row in data if row.get("Employee_ID") is not None)
+        for row in data:
+            if is_valid_row(row, "Employee_ID"):
+                yield row
 
     @dlt.resource(
         name="raw_position_control_adjustments",
@@ -94,7 +114,7 @@ def position_control_source(
             "Adjustment_Hourly": ensure_float,
         }
         for row in data:
-            if row.get("Adjustment_ID") is not None:
+            if is_valid_row(row, "Adjustment_ID"):
                 yield convert_types(row, conversions)
 
     @dlt.resource(
@@ -109,11 +129,9 @@ def position_control_source(
             get_sheets=False,
             get_named_ranges=False,
         )
-        yield from (
-            row
-            for row in data
-            if row.get("Stipend_ID") is not None and row.get("Employee_ID")
-        )
+        for row in data:
+            if is_valid_row(row, "Stipend_ID") and row.get("Employee_ID"):
+                yield row
 
     @dlt.resource(
         name="raw_position_control_assignments",
@@ -139,7 +157,7 @@ def position_control_source(
         }
         for row in data:
             if (
-                row.get("Assignment_ID") is not None
+                is_valid_row(row, "Assignment_ID")
                 and row.get("Employee_ID") is not None
                 and row.get("Position_ID") is not None
             ):

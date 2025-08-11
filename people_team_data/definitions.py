@@ -27,7 +27,6 @@ from .schedules import daily_all_assets_schedule  # noqa: E402
 all_assets = load_assets_from_modules([assets])
 
 set_env.configure_secrets()
-# Create definitions object using the imported resources
 defs = Definitions(
     assets=[*all_assets],
     jobs=[
@@ -40,5 +39,5 @@ defs = Definitions(
     ],
     schedules=[daily_all_assets_schedule],
     sensors=[],
-    resources=all_resources,  # Use the all_resources dictionary directly
+    resources=all_resources,
 )

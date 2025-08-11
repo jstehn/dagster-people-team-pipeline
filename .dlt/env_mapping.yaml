@@ -12,7 +12,6 @@ sources:
       envvar: KEYFILE_GCP_PEOPLE_TEAM_DRIVE
 paycom_pipeline:
   sources:
-    readers:
-      filesystem:
-        credentials: # Target prefix: PAYCOM_PIPELINE__SOURCES__READERS__FILESYSTEM__CREDENTIALS
-          envvar: KEYFILE_GCP_PEOPLE_TEAM_DRIVE
+    filesystem:
+      credentials: # Target prefix: PAYCOM_PIPELINE__SOURCES__READERS__FILESYSTEM__CREDENTIALS
+        envvar: KEYFILE_GCP_PEOPLE_TEAM_DRIVE
