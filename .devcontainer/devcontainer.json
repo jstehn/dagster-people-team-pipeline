@@ -1,5 +1,5 @@
 {
-    "name": "Python 3 & PostgreSQL",
+    "name": "Python 3",
     "dockerComposeFile": "docker-compose.yaml",
     "service": "app",
     "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",

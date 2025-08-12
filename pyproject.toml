@@ -45,6 +45,7 @@ dev = [
     "dagster-webserver",
     "pytest",
     "black",
+    "ipykernel",
     "isort",
     "sqlfmt",
 ]
