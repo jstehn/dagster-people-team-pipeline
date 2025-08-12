@@ -90,7 +90,7 @@ def vector_source() -> list:
         - ISO 8601 string (returns as-is if endswith 'Z')
         - naive datetime (assumes UTC)
         - aware datetime (converts to UTC)
-        Always returns a string in '%Y-%m-%dT%H:%M:%S.%f+00:00' format.
+        Always returns a string in '%Y-%m-%dT%H:%M:%S.%fZ' format.
         """
         if isinstance(dt, str):
             parsed = datetime.fromisoformat(dt)
@@ -98,13 +98,13 @@ def vector_source() -> list:
                 parsed = parsed.replace(tzinfo=timezone.utc)
             else:
                 parsed = parsed.astimezone(timezone.utc)
-            return parsed.strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
+            return parsed.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         elif isinstance(dt, datetime):
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             else:
                 dt = dt.astimezone(timezone.utc)
-            return dt.strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
+            return dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         else:
             raise TypeError(f"Unsupported type for date conversion: {type(dt)}")
 
@@ -176,40 +176,35 @@ def vector_source() -> list:
     def completions(
         start_date: str | datetime,
         end_date: str | datetime,
-        location_id: Optional[str] = None,
-        position_id: Optional[str] = None,
     ) -> Iterator[Dict]:
         start_date = _convert_to_utc_string(start_date)
         end_date = _convert_to_utc_string(end_date)
         get_completions_query = """
-            query GetCompletions($locationId: ID, $positionId: ID, $startDate: DateTime!, $endDate: DateTime!, $first: Int, $after: ID) {
-                Completions(locationId: $locationId, positionId: $positionId, startDate: $startDate, endDate: $endDate, first: $first, after: $after) {
-                    nodes {
-                        progressId
-                        completed
-                        completeTime
-                        maxQuizScore
-                        person {
-                            personId
-                            first
-                            last
-                            email
-                        }
-                        courseInfo {
-                            courseInfoId
-                            title
-                        }
+        query GetCompletions($startDate: DateTime!, $endDate: DateTime!, $first: Int, $after: ID) {
+            Completions(startDate: $startDate, endDate: $endDate, first: $first, after: $after) {
+                nodes {
+                    progressId
+                    completed
+                    completeTime
+                    person {
+                        personId
+                        first
+                        last
+                        email
                     }
-                    pageInfo {
-                        hasNextPage
-                        endCursor
+                    courseInfo {
+                        courseInfoId
+                        title
                     }
                 }
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
             }
+        }
         """
         variables = {
-            "locationId": location_id,
-            "positionId": position_id,
             "startDate": start_date,
             "endDate": end_date,
             "first": 100,
