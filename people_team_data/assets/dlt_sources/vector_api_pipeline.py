@@ -83,14 +83,14 @@ def query_vector_graphql(query: str, variables: Optional[Dict] = None) -> Dict:
 
 @dlt.source(name="vector_api_pipeline")
 def vector_source() -> list:
-    def to_utc(dt):
+    def _convert_to_utc_string(dt):
         """
         Convert a string or datetime to UTC ISO 8601 string.
         Accepts:
         - ISO 8601 string (returns as-is if endswith 'Z')
         - naive datetime (assumes UTC)
         - aware datetime (converts to UTC)
-        Always returns a string in '%Y-%m-%dT%H:%M:%S.%fZ' format.
+        Always returns a string in '%Y-%m-%dT%H:%M:%S.%f+00:00' format.
         """
         if isinstance(dt, str):
             parsed = datetime.fromisoformat(dt)
@@ -98,13 +98,13 @@ def vector_source() -> list:
                 parsed = parsed.replace(tzinfo=timezone.utc)
             else:
                 parsed = parsed.astimezone(timezone.utc)
-            return parsed.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            return parsed.strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
         elif isinstance(dt, datetime):
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             else:
                 dt = dt.astimezone(timezone.utc)
-            return dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            return dt.strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
         else:
             raise TypeError(f"Unsupported type for date conversion: {type(dt)}")
 
@@ -114,10 +114,10 @@ def vector_source() -> list:
         end_date: str | datetime,
         refreshed_since: Optional[str | datetime] = None,
     ) -> Iterator[Dict]:
-        begin_date = to_utc(begin_date)
-        end_date = to_utc(end_date)
+        begin_date = _convert_to_utc_string(begin_date)
+        end_date = _convert_to_utc_string(end_date)
         if refreshed_since:
-            refreshed_since = to_utc(refreshed_since)
+            refreshed_since = _convert_to_utc_string(refreshed_since)
         get_compliance_query = """
             query GetCompliance($beginDate: Date, $endDate: Date, $refreshedSince: Date, $first: Int, $after: ID) {
                 Compliance(beginDate: $beginDate, endDate: $endDate, refreshedSince: $refreshedSince, first: $first, after: $after) {
@@ -179,8 +179,8 @@ def vector_source() -> list:
         location_id: Optional[str] = None,
         position_id: Optional[str] = None,
     ) -> Iterator[Dict]:
-        start_date = to_utc(start_date)
-        end_date = to_utc(end_date)
+        start_date = _convert_to_utc_string(start_date)
+        end_date = _convert_to_utc_string(end_date)
         get_completions_query = """
             query GetCompletions($locationId: ID, $positionId: ID, $startDate: DateTime!, $endDate: DateTime!, $first: Int, $after: ID) {
                 Completions(locationId: $locationId, positionId: $positionId, startDate: $startDate, endDate: $endDate, first: $first, after: $after) {
