@@ -50,8 +50,8 @@ position_control as (
         assignment_wage as pc_hourly_rate,
         case
         when assignment_wage is null
-        then "Salary"
-        else "Hourly" end as pc_pay_type
+        then 'Salary'
+        else 'Hourly' end as pc_pay_type
     from {{ ref('stg_position_control_employees') }}
     join {{ ref('stg_position_control_assignments') }}
     on stg_position_control_employees.employee_id = stg_position_control_assignments.employee_id
@@ -62,42 +62,84 @@ joined_data as (
     select
         coalesce(bamboohr.employee_id, paycom.employee_id, position_control.employee_id) as employee_id,
         coalesce(
-            safe_cast(bamboohr.bamboohr_first_name as STRING),
-            safe_cast(paycom.paycom_first_name as STRING),
-            safe_cast(position_control.pc_first_name as STRING)
+            {% if target.name == 'duckdb_dev' %}
+                TRY_CAST(bamboohr.bamboohr_first_name AS STRING),
+                TRY_CAST(paycom.paycom_first_name AS STRING),
+                TRY_CAST(position_control.pc_first_name AS STRING)
+            {% else %}
+                SAFE_CAST(bamboohr.bamboohr_first_name AS STRING),
+                SAFE_CAST(paycom.paycom_first_name AS STRING),
+                SAFE_CAST(position_control.pc_first_name AS STRING)
+            {% endif %}
         ) as employee_first_name,
         coalesce(
-            safe_cast(bamboohr.bamboohr_last_name as STRING),
-            safe_cast(paycom.paycom_last_name as STRING),
-            safe_cast(position_control.pc_last_name as STRING)
+            {% if target.name == 'duckdb_dev' %}
+                TRY_CAST(bamboohr.bamboohr_last_name AS STRING),
+                TRY_CAST(paycom.paycom_last_name AS STRING),
+                TRY_CAST(position_control.pc_last_name AS STRING)
+            {% else %}
+                SAFE_CAST(bamboohr.bamboohr_last_name AS STRING),
+                SAFE_CAST(paycom.paycom_last_name AS STRING),
+                SAFE_CAST(position_control.pc_last_name AS STRING)
+            {% endif %}
         ) as employee_last_name,
-        safe_cast(bamboohr.bamboohr_first_name as STRING) as bhr_first_name,
-        safe_cast(paycom.paycom_first_name as STRING) as pc_first_name,
-        safe_cast(position_control.pc_first_name as STRING) as pce_first_name,
-        safe_cast(bamboohr.bamboohr_last_name as STRING) as bhr_last_name,
-        safe_cast(paycom.paycom_last_name as STRING) as pc_last_name,
-        safe_cast(position_control.pc_last_name as STRING) as pce_last_name,
-        safe_cast(bamboohr.bamboohr_middle_name as STRING) as bhr_middle_name,
-        safe_cast(paycom.paycom_middle_name as STRING) as pc_middle_name,
-        safe_cast(position_control.pc_middle_name as STRING) as pce_middle_name,
-        safe_cast(bamboohr.bamboohr_hire_date as STRING) as bhr_hire_date,
-        safe_cast(paycom.paycom_hire_date as STRING) as pc_hire_date,
-        safe_cast(NULL as STRING) as pce_hire_date,
-        safe_cast(bamboohr.bamboohr_employment_status as STRING) as bhr_status,
-        safe_cast(paycom.paycom_employment_status as STRING) as pc_status,
-        safe_cast(position_control.pc_employment_status as STRING) as pce_status,
-        safe_cast(bamboohr.bamboohr_position as STRING) as bhr_job_title,
-        safe_cast(paycom.paycom_position as STRING) as pc_job_title,
-        safe_cast(position_control.pc_position as STRING) as pce_job_title,
-        safe_cast(bamboohr.bamboohr_division as STRING) as bhr_division,
-        safe_cast(paycom.paycom_division as STRING) as pc_division,
-        safe_cast(position_control.pc_division as STRING) as pce_division,
-        safe_cast(bamboohr.bamboohr_location as STRING) as bhr_location,
-        safe_cast(paycom.paycom_location as STRING) as pc_location,
-        safe_cast(NULL as STRING) as pce_location,
-        safe_cast(bamboohr.bamboohr_pay_type as STRING) as bhr_pay_type,
-        safe_cast(paycom.paycom_pay_type as STRING) as pc_pay_type,
-        safe_cast(position_control.pc_pay_type as STRING) as pce_pay_type
+        {% if target.name == 'duckdb_dev' %}
+            TRY_CAST(bamboohr.bamboohr_first_name AS STRING) as bhr_first_name,
+            TRY_CAST(paycom.paycom_first_name AS STRING) as pc_first_name,
+            TRY_CAST(position_control.pc_first_name AS STRING) as pce_first_name,
+            TRY_CAST(bamboohr.bamboohr_last_name AS STRING) as bhr_last_name,
+            TRY_CAST(paycom.paycom_last_name AS STRING) as pc_last_name,
+            TRY_CAST(position_control.pc_last_name AS STRING) as pce_last_name,
+            TRY_CAST(bamboohr.bamboohr_middle_name AS STRING) as bhr_middle_name,
+            TRY_CAST(paycom.paycom_middle_name AS STRING) as pc_middle_name,
+            TRY_CAST(position_control.pc_middle_name AS STRING) as pce_middle_name,
+            TRY_CAST(bamboohr.bamboohr_hire_date AS STRING) as bhr_hire_date,
+            TRY_CAST(paycom.paycom_hire_date AS STRING) as pc_hire_date,
+            TRY_CAST(NULL AS STRING) as pce_hire_date,
+            TRY_CAST(bamboohr.bamboohr_employment_status AS STRING) as bhr_status,
+            TRY_CAST(paycom.paycom_employment_status AS STRING) as pc_status,
+            TRY_CAST(position_control.pc_employment_status AS STRING) as pce_status,
+            TRY_CAST(bamboohr.bamboohr_position AS STRING) as bhr_job_title,
+            TRY_CAST(paycom.paycom_position AS STRING) as pc_job_title,
+            TRY_CAST(position_control.pc_position AS STRING) as pce_job_title,
+            TRY_CAST(bamboohr.bamboohr_division AS STRING) as bhr_division,
+            TRY_CAST(paycom.paycom_division AS STRING) as pc_division,
+            TRY_CAST(position_control.pc_division AS STRING) as pce_division,
+            TRY_CAST(bamboohr.bamboohr_location AS STRING) as bhr_location,
+            TRY_CAST(paycom.paycom_location AS STRING) as pc_location,
+            TRY_CAST(NULL AS STRING) as pce_location,
+            TRY_CAST(bamboohr.bamboohr_pay_type AS STRING) as bhr_pay_type,
+            TRY_CAST(paycom.paycom_pay_type AS STRING) as pc_pay_type,
+            TRY_CAST(position_control.pc_pay_type AS STRING) as pce_pay_type
+        {% else %}
+            SAFE_CAST(bamboohr.bamboohr_first_name AS STRING) as bhr_first_name,
+            SAFE_CAST(paycom.paycom_first_name AS STRING) as pc_first_name,
+            SAFE_CAST(position_control.pc_first_name AS STRING) as pce_first_name,
+            SAFE_CAST(bamboohr.bamboohr_last_name AS STRING) as bhr_last_name,
+            SAFE_CAST(paycom.paycom_last_name AS STRING) as pc_last_name,
+            SAFE_CAST(position_control.pc_last_name AS STRING) as pce_last_name,
+            SAFE_CAST(bamboohr.bamboohr_middle_name AS STRING) as bhr_middle_name,
+            SAFE_CAST(paycom.paycom_middle_name AS STRING) as pc_middle_name,
+            SAFE_CAST(position_control.pc_middle_name AS STRING) as pce_middle_name,
+            SAFE_CAST(bamboohr.bamboohr_hire_date AS STRING) as bhr_hire_date,
+            SAFE_CAST(paycom.paycom_hire_date AS STRING) as pc_hire_date,
+            SAFE_CAST(NULL AS STRING) as pce_hire_date,
+            SAFE_CAST(bamboohr.bamboohr_employment_status AS STRING) as bhr_status,
+            SAFE_CAST(paycom.paycom_employment_status AS STRING) as pc_status,
+            SAFE_CAST(position_control.pc_employment_status AS STRING) as pce_status,
+            SAFE_CAST(bamboohr.bamboohr_position AS STRING) as bhr_job_title,
+            SAFE_CAST(paycom.paycom_position AS STRING) as pc_job_title,
+            SAFE_CAST(position_control.pc_position AS STRING) as pce_job_title,
+            SAFE_CAST(bamboohr.bamboohr_division AS STRING) as bhr_division,
+            SAFE_CAST(paycom.paycom_division AS STRING) as pc_division,
+            SAFE_CAST(position_control.pc_division AS STRING) as pce_division,
+            SAFE_CAST(bamboohr.bamboohr_location AS STRING) as bhr_location,
+            SAFE_CAST(paycom.paycom_location AS STRING) as pc_location,
+            SAFE_CAST(NULL AS STRING) as pce_location,
+            SAFE_CAST(bamboohr.bamboohr_pay_type AS STRING) as bhr_pay_type,
+            SAFE_CAST(paycom.paycom_pay_type AS STRING) as pc_pay_type,
+            SAFE_CAST(position_control.pc_pay_type AS STRING) as pce_pay_type
+        {% endif %}
     from bamboohr
     full outer join paycom on bamboohr.employee_id = paycom.employee_id
     full outer join position_control on coalesce(bamboohr.employee_id, paycom.employee_id) = position_control.employee_id

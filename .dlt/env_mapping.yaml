@@ -4,14 +4,14 @@
 
 destination:
   bigquery:
-    credentials: # Target prefix: DESTINATION__BIGQUERY__CREDENTIALS
+    credentials:
       envvar: KEYFILE_GCP_BIGQUERY
 sources:
   google_sheets:
-    credentials: # Target prefix: SOURCES__GOOGLE_SHEETS__CREDENTIALS
+    credentials:
       envvar: KEYFILE_GCP_PEOPLE_TEAM_DRIVE
 paycom_pipeline:
   sources:
     filesystem:
-      credentials: # Target prefix: PAYCOM_PIPELINE__SOURCES__READERS__FILESYSTEM__CREDENTIALS
+      credentials:
         envvar: KEYFILE_GCP_PEOPLE_TEAM_DRIVE

@@ -33,7 +33,7 @@ models:
         data_type: string
         data_tests:
           - accepted_values:
-              values: ["Terminated", "Active", "On Leave", "Deceased"]
+              values: ["Terminated", "Active", "Inactive", "On Leave", "Deceased"]
       - name: work_email
         description: "The work email address of the employee. PII."
         data_type: string

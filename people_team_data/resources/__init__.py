@@ -1,6 +1,7 @@
 import logging  # Added logging
 import os
-from pathlib import Path  # Added Path
+from pathlib import Path
+from typing import Literal  # Added Path
 
 from dagster import EnvVar, InitResourceContext, resource  # noqa: F401
 from dagster_dbt import DbtCliResource
@@ -24,10 +25,23 @@ bigquery_keyfile_path = (
     Path(__file__).parent.parent / ".secrets" / BIGQUERY_KEYFILE_NAME
 ).resolve()
 
+
 # -- Configure resources --
+def get_target() -> Literal["staff", "duckdb_dev"]:
+    """Determine the target environment based on the environment variable."""
+    environment = EnvVar("DAGSTER_ENV").get_value("production")
+    if environment in ("dev", "development"):
+        target = "duckdb_dev"
+    else:
+        target = "staff"
+    return target
+
+
+DBT_TARGET = get_target()
 dbt_resource = DbtCliResource(
     project_dir=dbt_project,
     profiles_dir=dbt_project.profiles_dir,
+    target=DBT_TARGET,
 )
 dlt_resource = DagsterDltResource()
 gcp_project_val = EnvVar("GCP_BASE_PROJECT").get_value()
