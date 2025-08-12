@@ -25,3 +25,4 @@ scratch*
 *.secrets
 *.duckdb
 *.bak
+*.tmp*
