@@ -63,12 +63,12 @@ def get_access_token() -> AccessToken:
     return AccessToken(**access_token)
 
 
-access_token = get_access_token()
+ACCESS_TOKEN = get_access_token()
 
 
 def query_vector_graphql(query: str, variables: Optional[Dict] = None) -> Dict:
     headers = {
-        "Authorization": access_token.auth_string,
+        "Authorization": ACCESS_TOKEN.auth_string,
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
