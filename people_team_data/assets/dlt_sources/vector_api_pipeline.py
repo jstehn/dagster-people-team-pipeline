@@ -1,5 +1,7 @@
+import json
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Dict, Iterator, Optional
 
 import dlt
@@ -79,8 +81,155 @@ def query_vector_graphql(query: str, variables: Optional[Dict] = None) -> Dict:
     return response.json()
 
 
-@dlt.source(name="vector_api_source")
+@dlt.source(name="vector_api_pipeline")
 def vector_source() -> list:
+    def to_utc(dt):
+        """
+        Convert a string or datetime to UTC ISO 8601 string.
+        Accepts:
+        - ISO 8601 string (returns as-is if endswith 'Z')
+        - naive datetime (assumes UTC)
+        - aware datetime (converts to UTC)
+        Always returns a string in '%Y-%m-%dT%H:%M:%S.%fZ' format.
+        """
+        if isinstance(dt, str):
+            parsed = datetime.fromisoformat(dt)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            else:
+                parsed = parsed.astimezone(timezone.utc)
+            return parsed.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        elif isinstance(dt, datetime):
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            else:
+                dt = dt.astimezone(timezone.utc)
+            return dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        else:
+            raise TypeError(f"Unsupported type for date conversion: {type(dt)}")
+
+    @dlt.resource(name="raw_vector_compliance")
+    def compliance(
+        begin_date: str | datetime,
+        end_date: str | datetime,
+        refreshed_since: Optional[str | datetime] = None,
+    ) -> Iterator[Dict]:
+        begin_date = to_utc(begin_date)
+        end_date = to_utc(end_date)
+        if refreshed_since:
+            refreshed_since = to_utc(refreshed_since)
+        get_compliance_query = """
+            query GetCompliance($beginDate: Date, $endDate: Date, $refreshedSince: Date, $first: Int, $after: ID) {
+                Compliance(beginDate: $beginDate, endDate: $endDate, refreshedSince: $refreshedSince, first: $first, after: $after) {
+                    nodes {
+                        complianceId
+                        effective
+                        due
+                        expire
+                        typeCode
+                        lastRefreshed
+                        person {
+                            personId
+                            first
+                            last
+                            email
+                        }
+                        topic {
+                            title
+                            description
+                        }
+                        courseInfo {
+                            courseInfoId
+                            title
+                        }
+                    }
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                }
+            }
+        """
+        variables = {
+            "beginDate": begin_date,
+            "endDate": end_date,
+            "refreshedSince": refreshed_since,
+            "first": 100,
+            "after": None,
+        }
+        has_next_page = True
+        while has_next_page:
+            result = query_vector_graphql(
+                get_compliance_query, variables=variables
+            )
+            compliance_data = result["data"]["Compliance"]
+            if not compliance_data:
+                break
+            nodes = compliance_data["nodes"]
+            for node in nodes:
+                yield node
+            page_info = compliance_data["pageInfo"]
+            has_next_page = page_info["hasNextPage"]
+            variables["after"] = page_info["endCursor"]
+
+    @dlt.resource(name="raw_vector_completions")
+    def completions(
+        start_date: str | datetime,
+        end_date: str | datetime,
+        location_id: Optional[str] = None,
+        position_id: Optional[str] = None,
+    ) -> Iterator[Dict]:
+        start_date = to_utc(start_date)
+        end_date = to_utc(end_date)
+        get_completions_query = """
+            query GetCompletions($locationId: ID, $positionId: ID, $startDate: DateTime!, $endDate: DateTime!, $first: Int, $after: ID) {
+                Completions(locationId: $locationId, positionId: $positionId, startDate: $startDate, endDate: $endDate, first: $first, after: $after) {
+                    nodes {
+                        progressId
+                        completed
+                        completeTime
+                        maxQuizScore
+                        person {
+                            personId
+                            first
+                            last
+                            email
+                        }
+                        courseInfo {
+                            courseInfoId
+                            title
+                        }
+                    }
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                }
+            }
+        """
+        variables = {
+            "locationId": location_id,
+            "positionId": position_id,
+            "startDate": start_date,
+            "endDate": end_date,
+            "first": 100,
+            "after": None,
+        }
+        has_next_page = True
+        while has_next_page:
+            result = query_vector_graphql(
+                get_completions_query, variables=variables
+            )
+            completions_data = result["data"]["Completions"]
+            if not completions_data:
+                break
+            nodes = completions_data["nodes"]
+            for node in nodes:
+                yield node
+            page_info = completions_data["pageInfo"]
+            has_next_page = page_info["hasNextPage"]
+            variables["after"] = page_info["endCursor"]
+
     @dlt.resource(name="raw_vector_people")
     def vector_people() -> Iterator[Dict]:
         get_people_query = """
@@ -113,4 +262,41 @@ def vector_source() -> list:
             has_next_page = page_info["hasNextPage"]
             variables["after"] = page_info["endCursor"]
 
-    return [vector_people]
+    @dlt.resource(name="raw_vector_course_info")
+    def course_infos() -> Iterator[Dict]:
+        get_course_infos_query = """
+            query GetCourseInfos($first: Int, $after: ID) {
+                CourseInfos(first: $first, after: $after) {
+                    nodes {
+                        courseInfoId
+                        title
+                        active
+                        topicId
+                        topicTitle
+                        variantId
+                        variantSubtitle
+                    }
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                }
+            }
+        """
+        variables = {"first": 100, "after": None}
+        has_next_page = True
+        while has_next_page:
+            result = query_vector_graphql(
+                get_course_infos_query, variables=variables
+            )
+            course_infos_data = result["data"]["CourseInfos"]
+            if not course_infos_data:
+                break
+            nodes = course_infos_data["nodes"]
+            for node in nodes:
+                yield node
+            page_info = result["data"]["CourseInfos"]["pageInfo"]
+            has_next_page = page_info["hasNextPage"]
+            variables["after"] = page_info["endCursor"]
+
+    return [vector_people, course_infos, completions, compliance]
