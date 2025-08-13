@@ -25,6 +25,8 @@ models:
   +persist_docs:
     relation: true
     columns: true
+  staff:
+    +schema: staff
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
 

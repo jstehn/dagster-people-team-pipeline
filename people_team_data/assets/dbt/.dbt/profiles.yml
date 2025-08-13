@@ -10,5 +10,6 @@ default:
     duckdb_dev:
       type: duckdb
       path: '../../../data/duckdb/dev.duckdb'
+      schema: staff
       threads: 4
   target: 'staff'
