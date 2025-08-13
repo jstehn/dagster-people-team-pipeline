@@ -64,8 +64,8 @@ else:
 
 # Collection of all resources for easy import in definitions.py
 all_resources = {
-    "dbt": dbt_resource,
-    "dlt": dlt_resource,
-    "lake": lake_resource,
-    "warehouse": warehouse_resource,
+    "dbt_resource": dbt_resource,
+    "dlt_resource": dlt_resource,
+    "lake_resource": lake_resource,
+    "warehouse_resource": warehouse_resource,
 }

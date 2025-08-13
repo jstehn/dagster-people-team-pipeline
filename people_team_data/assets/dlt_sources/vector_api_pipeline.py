@@ -254,14 +254,15 @@ def vector_source() -> list:
             result = query_vector_graphql(
                 get_progress_query, variables=variables
             )
-            completions_data = result["data"]["Progress"]
+            data = result.get("data") or {}
+            completions_data = data.get("Progress")
             if not completions_data:
                 break
             nodes = completions_data["nodes"]
             for node in nodes:
-                person_node = node.get("person", {})
-                course_info_node = node.get("courseInfo", {})
-                compliance_node = node.get("compliance", {})
+                person_node = node.get("person") or {}
+                course_info_node = node.get("courseInfo") or {}
+                compliance_node = node.get("compliance") or {}
                 yield {
                     "progressId": str(node.get("progressId")),
                     "personId": str(person_node.get("personId")),
@@ -383,7 +384,7 @@ def vector_source() -> list:
                 break
             nodes = locations_data["nodes"]
             for node in nodes:
-                parent_node = node.get("parent", {})
+                parent_node = node.get("parent") or {}
                 yield {
                     "locationId": str(node.get("locationId")),
                     "name": str(node.get("name")),
@@ -425,14 +426,15 @@ def vector_source() -> list:
         has_next_page = True
         while has_next_page:
             result = query_vector_graphql(get_jobs_query, variables=variables)
-            jobs_data = result["data"].get("Jobs")
+            data = result.get("data") or {}
+            jobs_data = data.get("Jobs")
             if not jobs_data:
                 break
             nodes = jobs_data["nodes"]
             for node in nodes:
-                person_node = node.get("person", {})
-                position_node = node.get("position", {})
-                location_node = node.get("location", {})
+                person_node = node.get("person") or {}
+                position_node = node.get("position") or {}
+                location_node = node.get("location") or {}
                 yield {
                     "jobId": str(node.get("jobId")),
                     "title": str(node.get("title")),
@@ -477,7 +479,7 @@ def vector_source() -> list:
                 break
             nodes = positions_data["nodes"]
             for node in nodes:
-                parent_node = node.get("parent", {})
+                parent_node = node.get("parent") or {}
                 yield {
                     "positionId": str(node.get("positionId")),
                     "code": str(node.get("code")),
