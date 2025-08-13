@@ -50,16 +50,6 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
             "data_type": "text",
             "description": "Employee's gender",
         },
-        "genderIdentity": {
-            "name": "gender_identity",
-            "data_type": "text",
-            "description": "Employee's gender identity",
-        },
-        "employeePronouns": {
-            "name": "employee_pronouns",
-            "data_type": "text",
-            "description": "Employee's pronouns",
-        },
         "age": {
             "name": "age",
             "description": "Employee's age",
@@ -74,24 +64,6 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
             "name": "marital_status",
             "data_type": "text",
             "description": "Marital Status",
-            "pii": True,
-        },
-        "nationalId": {
-            "name": "national_id",
-            "data_type": "text",
-            "description": "National ID",
-            "pii": True,
-        },
-        "nationality": {
-            "name": "nationality",
-            "data_type": "text",
-            "description": "Nationality",
-            "pii": True,
-        },
-        "citizenship": {
-            "name": "citizenship",
-            "data_type": "text",
-            "description": "Citizenship",
             "pii": True,
         },
         # Contact Information
@@ -213,21 +185,6 @@ def get_bamboohr_schema() -> Dict[str, Dict[str, Any]]:
             "name": "reports_to",
             "data_type": "text",
             "description": "Employee's supervisor",
-        },
-        "payGroup": {
-            "name": "pay_group",
-            "data_type": "text",
-            "description": "Pay Group",
-        },
-        "flsaCode": {
-            "name": "flsa_code",
-            "data_type": "text",
-            "description": "FLSA Code",
-        },
-        "eeoJobCategory": {
-            "name": "eeo_job_category",
-            "data_type": "text",
-            "description": "EEO Job Category",
         },
         # Compensation
         "compensationChangeReason": {
