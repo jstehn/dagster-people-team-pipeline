@@ -1,4 +1,8 @@
-from typing import Any, Dict
+"""
+DLT source for Position Control data. This module defines a source and multiple resources for processing data from Google Sheets.
+"""
+
+from typing import Any, Callable, Dict
 
 import dlt
 
@@ -6,12 +10,12 @@ from .google_sheets import google_spreadsheet
 
 
 def ensure_str(value: Any) -> str:
-    """Convert value to string, empty string if None"""
+    """Convert a value to a string, returning an empty string if the value is None."""
     return str(value) if value is not None else ""
 
 
 def ensure_float(value: Any) -> float | None:
-    """Convert value to float, None if invalid"""
+    """Convert a value to a float, returning None if the conversion fails."""
     if value is None:
         return None
     try:
@@ -22,16 +26,16 @@ def ensure_float(value: Any) -> float | None:
 
 def is_valid_row(row: Dict[str, Any], primary_key: str) -> bool:
     """
-    Check if a row is valid (not empty and not a duplicate header)
+    Check if a row is valid by ensuring it is not empty and does not duplicate the header.
 
     Args:
-        row: The row data dictionary
-        primary_key: The primary key field name to check
+        row (Dict[str, Any]): The row data dictionary.
+        primary_key (str): The primary key field name to check.
 
     Returns:
-        True if the row is valid, False otherwise
+        bool: True if the row is valid, False otherwise.
     """
-    return (
+    return bool(
         row
         and row.get(primary_key) is not None
         and row[primary_key] != primary_key
@@ -39,9 +43,18 @@ def is_valid_row(row: Dict[str, Any], primary_key: str) -> bool:
 
 
 def convert_types(
-    row: Dict[str, Any], conversions: Dict[str, callable]
+    row: Dict[str, Any], conversions: Dict[str, Callable[[Any], Any]]
 ) -> Dict[str, Any]:
-    """Apply type conversions to specified fields in a row"""
+    """
+    Apply type conversions to specified fields in a row.
+
+    Args:
+        row (Dict[str, Any]): The row data dictionary.
+        conversions (Dict[str, Callable[[Any], Any]]): A dictionary mapping field names to conversion functions.
+
+    Returns:
+        Dict[str, Any]: The row with converted field values.
+    """
     if not row:
         return row
 
@@ -58,12 +71,28 @@ def convert_types(
 def position_control_source(
     position_control_sheet_id: str = dlt.config.value,
 ):
+    """
+    Define a DLT source for Position Control data from Google Sheets.
+
+    Args:
+        position_control_sheet_id (str): The ID of the Google Sheet containing Position Control data.
+
+    Returns:
+        List[dlt.Resource]: A list of resources for processing Position Control data.
+    """
+
     @dlt.resource(
         name="raw_position_control_positions",
         primary_key="Position_ID",
         write_disposition="merge",
     )
     def position_control_positions():
+        """
+        Process Position Control positions data from the Google Sheet.
+
+        Yields:
+            Dict[str, Any]: Parsed and converted rows of positions data.
+        """
         data = google_spreadsheet(
             position_control_sheet_id=position_control_sheet_id,
             range_names=["Positions"],
@@ -84,6 +113,12 @@ def position_control_source(
         write_disposition="merge",
     )
     def position_control_employees():
+        """
+        Process Position Control employees data from the Google Sheet.
+
+        Yields:
+            Dict[str, Any]: Parsed rows of employees data.
+        """
         data = google_spreadsheet(
             position_control_sheet_id=position_control_sheet_id,
             range_names=["Employees"],
@@ -100,6 +135,12 @@ def position_control_source(
         write_disposition="merge",
     )
     def position_control_adjustments():
+        """
+        Process Position Control adjustments data from the Google Sheet.
+
+        Yields:
+            Dict[str, Any]: Parsed and converted rows of adjustments data.
+        """
         data = google_spreadsheet(
             position_control_sheet_id=position_control_sheet_id,
             range_names=["Adjustments"],
@@ -123,6 +164,12 @@ def position_control_source(
         write_disposition="merge",
     )
     def position_control_stipends():
+        """
+        Process Position Control stipends data from the Google Sheet.
+
+        Yields:
+            Dict[str, Any]: Parsed rows of stipends data.
+        """
         data = google_spreadsheet(
             position_control_sheet_id=position_control_sheet_id,
             range_names=["Stipends"],
@@ -139,6 +186,12 @@ def position_control_source(
         write_disposition="merge",
     )
     def position_control_assignments():
+        """
+        Process Position Control assignments data from the Google Sheet.
+
+        Yields:
+            Dict[str, Any]: Parsed and converted rows of assignments data.
+        """
         data = google_spreadsheet(
             position_control_sheet_id=position_control_sheet_id,
             range_names=["Assignments"],

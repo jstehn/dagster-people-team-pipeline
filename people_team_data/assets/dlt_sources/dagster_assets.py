@@ -1,6 +1,4 @@
-import os
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 from dagster import AssetExecutionContext, EnvVar
 from dagster_dlt import DagsterDltResource, dlt_assets
@@ -24,9 +22,6 @@ def get_destination():
 
 
 DEST = get_destination()
-# Set DLT config directory to the moved .dlt folder
-DLT_CONFIG_DIR = Path(__file__).parent / ".dlt"
-os.environ["DLT_CONFIG_DIR"] = str(DLT_CONFIG_DIR)
 
 
 @dlt_assets(
@@ -43,6 +38,9 @@ os.environ["DLT_CONFIG_DIR"] = str(DLT_CONFIG_DIR)
 def dagster_bamboohr_assets(
     context: AssetExecutionContext, dlt_resource: DagsterDltResource
 ):
+    """
+    Loads BambooHR employee data into the staff schema using DLT.
+    """
     yield from dlt_resource.run(context=context, write_disposition="merge")
 
 
@@ -60,6 +58,9 @@ def dagster_bamboohr_assets(
 def dagster_paycom_assets(
     context: AssetExecutionContext, dlt_resource: DagsterDltResource
 ):
+    """
+    Loads Paycom employee data into the staff schema using DLT.
+    """
     yield from dlt_resource.run(context=context, write_disposition="merge")
 
 
@@ -77,6 +78,9 @@ def dagster_paycom_assets(
 def dagster_position_control_assets(
     context: AssetExecutionContext, dlt_resource: DagsterDltResource
 ):
+    """
+    Loads position control data into the staff schema using DLT.
+    """
     yield from dlt_resource.run(context=context, write_disposition="merge")
 
 
@@ -94,17 +98,13 @@ def dagster_position_control_assets(
 def dagster_vector_compliance_assets(
     context: AssetExecutionContext, dlt_resource: DagsterDltResource
 ):
-    """Materialize Vector compliance incrementally using Dagster metadata.
-
-    Window logic:
-      - Fetch last materialization record for this asset.
-      - Attempt to read prior window_end from metadata; fallback to materialization event timestamp.
-      - begin = max(prior_end, now-365d) if prior_end else now-365d.
-      - end = now + 1 day (UTC) to capture late-arriving events.
-      - After successful run, emit metadata with window_begin/window_end for next run.
+    """
+    Loads Vector API compliance and progress data incrementally into the staff schema using DLT.
+    Extraction window is determined from Dagster asset metadata for incremental loads.
     """
 
     def _extract_prior_end() -> datetime | None:
+        """Get the previous window end from Dagster asset metadata or materialization timestamp."""
         try:
             records = list(
                 context.instance.get_asset_records([context.asset_key])
@@ -115,17 +115,15 @@ def dagster_vector_compliance_assets(
             ):
                 return None
             last_mat = record.asset_entry.last_materialization
-            # Try to access metadata (varies by Dagster version)
             meta_dict = {}
             try:
-                # Common: last_mat.materialization.metadata is a dict-like
                 mat_obj = getattr(last_mat, "materialization", None) or getattr(
                     last_mat, "asset_materialization", None
                 )
                 raw_meta = getattr(mat_obj, "metadata", None)
                 if isinstance(raw_meta, dict):
                     meta_dict = raw_meta
-                elif raw_meta:  # list of MetadataEntry
+                elif raw_meta:
                     meta_dict = {
                         m.label: getattr(m, "value", None) for m in raw_meta
                     }
@@ -139,7 +137,6 @@ def dagster_vector_compliance_assets(
                     )
                 except Exception:
                     pass
-            # Fallback to event log timestamp (seconds since epoch, UTC)
             ts = getattr(
                 getattr(last_mat, "event_log_entry", last_mat),
                 "timestamp",

@@ -1,6 +1,16 @@
+"""
+This module defines the Dagster pipeline configuration.
+
+It includes:
+- Loading all assets from the `assets` module.
+- Configuring jobs, schedules, sensors, and resources.
+- Setting up environment secrets for secure access.
+"""
+
 import os
 import sys
 
+# Add the project root directory to the system path for module resolution
 project_root_dir = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..")
 )
@@ -23,10 +33,13 @@ from .jobs import (  # noqa: E402
 from .resources import all_resources  # noqa: E402
 from .schedules import daily_all_assets_schedule  # noqa: E402
 
-# Load all assets
+# Load all assets from the `assets` module
 all_assets = load_assets_from_modules([assets])
 
+# Configure environment secrets for secure access
 set_env.configure_secrets()
+
+# Define the Dagster pipeline configuration
 defs = Definitions(
     assets=[*all_assets],
     jobs=[

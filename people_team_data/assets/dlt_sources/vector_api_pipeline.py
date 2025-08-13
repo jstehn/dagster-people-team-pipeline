@@ -16,6 +16,16 @@ VECTOR_GRAPHQL_URL = f"{VECTOR_DOMAIN}/graphql"
 
 @dataclass
 class AccessToken:
+    """
+    Represents an access token for the Vector API.
+
+    Attributes:
+        token_type (str): The type of the token (e.g., "Bearer").
+        access_token (str): The actual access token string.
+        expires_in (int): The number of seconds until the token expires.
+        created_at (int): The timestamp (in seconds since epoch) when the token was created.
+    """
+
     token_type: str
     access_token: str
     expires_in: int

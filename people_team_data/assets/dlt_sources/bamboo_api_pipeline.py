@@ -1,3 +1,7 @@
+"""
+DLT source for BambooHR API. Handles batch fetching, error isolation, and retries for employee data.
+"""
+
 import logging
 import time
 from typing import Any, Dict, List, Set
@@ -23,7 +27,7 @@ FORBIDDEN_FIELDS: Set[str] = set()
 
 
 def batch_iterator(lst: List[Any], batch_size: int):
-    """Yield successive batch_size chunks from lst."""
+    """Yield successive batch_size chunks from a list."""
     for i in range(0, len(lst), batch_size):
         yield lst[i : i + batch_size]
 
@@ -31,9 +35,9 @@ def batch_iterator(lst: List[Any], batch_size: int):
 def _post_dataset(
     domain: str, api_key: str, fields: List[str]
 ) -> List[Dict[str, Any]]:
-    """Call BambooHR datasets/employee endpoint directly and return JSON list.
-
-    Raises an exception with detailed context on failure.
+    """
+    Call BambooHR datasets/employee endpoint and return JSON list.
+    Raises an exception with context on failure.
     """
     url = f"https://{domain}.bamboohr.com/api/v1/datasets/employee"
     headers = {
@@ -76,7 +80,7 @@ def _post_dataset(
 def _fetch_batch_with_retry(
     domain: str, api_key: str, fields: List[str], batch_name: str
 ) -> List[Dict[str, Any]] | None:
-    """Retry wrapper for dataset batch fetch with exponential backoff and field isolation on 403."""
+    """Fetch a batch of employee data with retries and forbidden field isolation on 403 errors."""
     attempt = 0
     while attempt < MAX_RETRIES:
         try:
@@ -135,16 +139,7 @@ def bamboohr_source(
     bamboohr_api_key: str = dlt.secrets.value,
     bamboohr_company_domain: str = dlt.secrets.value,
 ):
-    """
-    DLT source for BambooHR API.
-
-    Args:
-        api_key (str): API key for BambooHR.
-        company_domain (str): Company domain for BambooHR.
-
-    Returns:
-        dlt.Source: DLT source object.
-    """
+    """DLT source for BambooHR API. Returns employee data in batches."""
     logging.debug(
         "Initializing BambooHR source with company domain: %s",
         bamboohr_company_domain,
@@ -159,12 +154,7 @@ def bamboohr_source(
 
     @dlt.resource(name="raw_bamboohr", primary_key="employeeNumber")
     def employee_data():
-        """
-        Process employee data in batches of fields.
-
-        Yields:
-            dict: Complete employee records with all fields.
-        """
+        """Yield complete employee records with all available fields, batched for API efficiency."""
         # Dictionary to store complete employee records
         employee_records: Dict[int, Dict[str, Any]] = {}
 
