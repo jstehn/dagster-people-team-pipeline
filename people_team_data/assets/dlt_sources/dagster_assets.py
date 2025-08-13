@@ -9,6 +9,7 @@ from dlt.destinations import duckdb
 from .bamboo_api_pipeline import bamboohr_source
 from .paycom_pipeline import paycom_source
 from .position_control_pipeline import position_control_source
+from .vector_api_pipeline import vector_source
 
 
 # Dynamically determine destination based on environment
@@ -72,6 +73,23 @@ def dagster_paycom_assets(
     # group_name="raw_people_data",
 )
 def dagster_position_control_assets(
+    context: AssetExecutionContext, dlt: DagsterDltResource
+):
+    yield from dlt.run(context=context, write_disposition="merge")
+
+
+@dlt_assets(
+    dlt_source=vector_source(),
+    dlt_pipeline=pipeline(
+        pipeline_name="vector_api_pipeline",
+        dataset_name="staff",
+        destination=DEST,
+        progress="log",
+    ),
+    name="raw_vector_api",
+    # group_name="raw_people_data",
+)
+def dagster_vector_api_assets(
     context: AssetExecutionContext, dlt: DagsterDltResource
 ):
     yield from dlt.run(context=context, write_disposition="merge")
