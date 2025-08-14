@@ -143,7 +143,9 @@ def dagster_vector_compliance_assets(
                 None,
             )
             if ts:
-                return datetime.fromtimestamp(ts, tz=timezone.utc)
+                return datetime.fromtimestamp(ts, tz=timezone.utc) - timedelta(
+                    days=1
+                )
         except Exception:
             return None
         return None

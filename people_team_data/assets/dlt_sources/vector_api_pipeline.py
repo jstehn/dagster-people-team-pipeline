@@ -296,6 +296,21 @@ def vector_source() -> list:
                         first
                         last
                         email
+                        address1
+                        address2
+                        address3
+                        city
+                        country
+                        externalUniqueId
+                        jobs {
+                            jobId
+                        }
+                        middle
+                        phone
+                        postalCode
+                        state
+                        username
+                        isActive
                     }
                     pageInfo {
                         hasNextPage
@@ -308,13 +323,30 @@ def vector_source() -> list:
         has_next_page = True
         while has_next_page:
             result = query_vector_graphql(get_people_query, variables=variables)
-            people_data = result["data"]["People"]
+            people_data = result["data"].get("People")
             if not people_data:
                 break
             nodes = people_data["nodes"]
             for node in nodes:
-                yield node
-            page_info = result["data"]["People"]["pageInfo"]
+                yield {
+                    "personId": str(node.get("personId")),
+                    "first": str(node.get("first")),
+                    "last": str(node.get("last")),
+                    "email": str(node.get("email")),
+                    "address1": str(node.get("address1")),
+                    "address2": str(node.get("address2")),
+                    "address3": str(node.get("address3")),
+                    "city": str(node.get("city")),
+                    "country": str(node.get("country")),
+                    "externalUniqueId": str(node.get("externalUniqueId")),
+                    "middle": str(node.get("middle")),
+                    "phone": str(node.get("phone")),
+                    "postalCode": str(node.get("postalCode")),
+                    "state": str(node.get("state")),
+                    "username": str(node.get("username")),
+                    "isActive": __convert_bool(node.get("isActive")),
+                }
+            page_info = people_data["pageInfo"]
             has_next_page = page_info["hasNextPage"]
             variables["after"] = page_info["endCursor"]
 
