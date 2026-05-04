@@ -66,7 +66,7 @@ with raw as (
             SAFE_CAST(work_location AS STRING) as work_location,
             _dlt_load_id,
             _dlt_id,
-            SAFE_CAST(FORMAT('%d', primary_phone) AS STRING) as primary_phone, -- PII
+            SAFE_CAST(SAFE_CAST(primary_phone AS INT64) AS STRING) as primary_phone, -- PII
             SAFE_CAST(seid AS STRING) as seid, -- PII
             SAFE_CAST(ess_eeo1_ethnicity_race AS STRING) as ess_eeo1_ethnicity_race, -- Potential PII
             SAFE_CAST(position AS STRING) as position,
