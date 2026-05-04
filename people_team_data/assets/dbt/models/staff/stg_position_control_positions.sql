@@ -31,7 +31,7 @@ with raw as (
             SAFE_CAST(position_id as STRING) as position_id,
             SAFE_CAST(position_unique as BOOLEAN) as position_unique,
             SAFE_CAST(assignment_count as INT64) as assignment_count,
-            SAFE.PARSE_DATE('%Y-%m-%d', position_start) as position_start,
+            SAFE_CAST(position_start as DATE) as position_start,
             SAFE_CAST(position_status as STRING) as position_status,
             SAFE_CAST(position_hr_department as STRING) as position_hr_department,
             SAFE_CAST(position_hr_division as STRING) as position_hr_division,
