@@ -17,7 +17,8 @@ project_root_dir = os.path.abspath(
 if project_root_dir not in sys.path:
     sys.path.insert(0, project_root_dir)
 
-from dagster import Definitions, load_assets_from_modules  # noqa: E402
+# NEW: Added define_asset_job, AssetSelection, and ScheduleDefinition
+from dagster import Definitions, load_assets_from_modules, define_asset_job, AssetSelection, ScheduleDefinition  # noqa: E402
 
 import set_env  # noqa: E402
 
@@ -31,7 +32,9 @@ from .jobs import (  # noqa: E402
     position_control_job,
 )
 from .resources import all_resources  # noqa: E402
-from .schedules import daily_all_assets_schedule  # noqa: E402
+
+# REMOVED: daily_all_assets_schedule to replace it with our decoupled schedule
+# from .schedules import daily_all_assets_schedule  # noqa: E402
 
 # Load all assets from the `assets` module
 all_assets = load_assets_from_modules([assets])
@@ -39,18 +42,34 @@ all_assets = load_assets_from_modules([assets])
 # Configure environment secrets for secure access
 set_env.configure_secrets()
 
+# --- NEW: Define the decoupled job and schedule ---
+# 1. Create a job that selects all assets EXCEPT the raw Paycom ingestion
+automated_assets_job = define_asset_job(
+    name="automated_assets_job",
+    selection=AssetSelection.all() - AssetSelection.keys("dlt_paycom_source_raw_paycom")
+)
+
+# 2. Schedule this new job to run daily at midnight (adjust the cron string as needed)
+daily_automated_schedule = ScheduleDefinition(
+    name="daily_automated_schedule",
+    job=automated_assets_job,
+    cron_schedule="0 0 * * *", 
+)
+# ---------------------------------------------------
+
 # Define the Dagster pipeline configuration
 defs = Definitions(
     assets=[*all_assets],
     jobs=[
-        all_assets_job,
+        all_assets_job,       # Kept for historical reference/manual full runs
+        automated_assets_job, # NEW: The decoupled job
         bamboohr_job,
-        paycom_job,
+        paycom_job,           # Kept so Paycom can still be triggered manually
         position_control_job,
         dlt_source_job,
         dbt_job,
     ],
-    schedules=[daily_all_assets_schedule],
+    schedules=[daily_automated_schedule], # NEW: Replaced the old schedule
     sensors=[],
     resources=all_resources,
 )
