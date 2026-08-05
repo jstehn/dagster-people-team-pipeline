@@ -1,5 +1,6 @@
 """Contains helper functions to extract data from spreadsheet API"""
 
+import socket
 from typing import Any, List, Tuple
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
 
@@ -28,7 +29,7 @@ def is_retry_status_code(exception: BaseException) -> bool:
     return (
         isinstance(exception, HttpError)
         and exception.resp.status in DEFAULT_RETRY_STATUS
-    )
+    ) or isinstance(exception, (TimeoutError, ConnectionError))
 
 
 retry_deco = retry(
@@ -56,6 +57,7 @@ def api_auth(credentials: GcpCredentials, max_api_retries: int) -> Resource:
     """
     if isinstance(credentials, GcpOAuthCredentials):
         credentials.auth("https://www.googleapis.com/auth/spreadsheets.readonly")
+    socket.setdefaulttimeout(300)
     # Build the service object for Google sheets api.
     service = build(
         "sheets",
