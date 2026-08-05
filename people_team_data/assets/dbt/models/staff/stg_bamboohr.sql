@@ -153,7 +153,19 @@ with raw as (
     {% if is_incremental() %}
       where _dlt_load_id > (select max(_dlt_load_id) from {{ this }})
     {% endif %}
+),
+
+deduped as (
+    select
+        *,
+        row_number() over (
+            partition by employee_id
+            order by _dlt_load_id desc
+        ) as _row_num
+    from raw
+    where employee_id is not null
 )
 
-select *
-from raw
+select * except(_row_num)
+from deduped
+where _row_num = 1

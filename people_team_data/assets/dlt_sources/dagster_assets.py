@@ -41,7 +41,7 @@ def dagster_bamboohr_assets(
     """
     Loads BambooHR employee data into the staff schema using DLT.
     """
-    yield from dlt_resource.run(context=context, write_disposition="merge")
+    yield from dlt_resource.run(context=context, write_disposition="replace")
 
 
 @dlt_assets(
