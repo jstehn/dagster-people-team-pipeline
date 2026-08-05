@@ -42,6 +42,12 @@ jobs:
           ref: ${{ github.head_ref }}
           path: project-repo
 
+      - name: Set up Python
+        if: steps.prerun.outputs.result == 'pex-deploy'
+        uses: actions/setup-python@v6
+        with:
+          python-version: "${{ env.PYTHON_VERSION }}"
+
       - name: Prepare DBT project for deployment
         if: steps.prerun.outputs.result == 'pex-deploy'
         env:
@@ -51,11 +57,10 @@ jobs:
           KEYFILE_GCP_PEOPLE_TEAM_DRIVE: ${{ secrets.KEYFILE_GCP_PEOPLE_TEAM_DRIVE }}
           ALL_SECRETS_JSON_FOR_ENV_EXPORT: ${{ toJson(secrets) }}
         run: |
-          export PATH="$HOME/.local/bin:$PATH"
           python -m pip install pip --upgrade
           cd project-repo
           echo "Installing project dependencies..."
-          pip install . --upgrade --upgrade-strategy eager
+          pip install .
           echo "Setting up environment variables and json keyfiles..."
           python set_env.py
           echo "Running dagster-dbt project prepare-and-package..."

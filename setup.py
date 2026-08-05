@@ -17,10 +17,10 @@ setup(
     install_requires=[
         "black",
         "dagit",
-        "dagster",
+        "dagster==1.13.16",
         "dagster-cloud",
         "dagster-cloud-cli",
-        "dagster-dbt",
+        "dagster-dbt==0.29.16",
         "dagster-dlt",
         "dagster-gcp",
         "dagster-gcp-pandas",
