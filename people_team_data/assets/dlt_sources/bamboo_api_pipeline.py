@@ -36,7 +36,7 @@ def _post_dataset(
     domain: str, api_key: str, fields: List[str]
 ) -> List[Dict[str, Any]]:
     """
-    Call BambooHR datasets/employee endpoint and return JSON list.
+    Call BambooHR datasets/employee endpoint and return JSON list across all paginated pages.
     Raises an exception with context on failure.
     """
     url = f"https://{domain}.bamboohr.com/api/v1/datasets/employee"
@@ -44,37 +44,54 @@ def _post_dataset(
         "Accept": "application/json",
         "Content-Type": "application/json",
     }
-    payload = {"fields": fields}
-    response = requests.post(
-        url, json=payload, headers=headers, auth=(api_key, "x"), timeout=60
-    )
-    if response.status_code == 403:
-        # Provide extra diagnostics
-        raise PermissionError(
-            f"403 Forbidden for dataset request. Fields={fields}. Body={response.text[:500]}"
-        )
-    try:
-        response.raise_for_status()
-    except Exception as e:
-        raise RuntimeError(
-            f"Error {response.status_code} calling BambooHR dataset: {response.text[:500]}"
-        ) from e
-    data = response.json()
-    # API sometimes wraps list under {'data': [...]}
-    if isinstance(data, dict):
-        if "data" in data and isinstance(data["data"], list):
-            return data["data"]
-        # When error shape came through without triggering 4xx
-        if "error" in data:
-            raise RuntimeError(f"Dataset error payload: {data['error']}")
+    payload: Dict[str, Any] | None = {"fields": fields}
+    all_records: List[Dict[str, Any]] = []
+
+    while url:
+        if payload is not None:
+            response = requests.post(
+                url, json=payload, headers=headers, auth=(api_key, "x"), timeout=60
+            )
+        else:
+            response = requests.get(
+                url, headers=headers, auth=(api_key, "x"), timeout=60
+            )
+
+        if response.status_code == 403:
+            # Provide extra diagnostics
+            raise PermissionError(
+                f"403 Forbidden for dataset request. Fields={fields}. Body={response.text[:500]}"
+            )
+        try:
+            response.raise_for_status()
+        except Exception as e:
+            raise RuntimeError(
+                f"Error {response.status_code} calling BambooHR dataset: {response.text[:500]}"
+            ) from e
+        data = response.json()
+        if isinstance(data, dict):
+            # When error shape came through without triggering 4xx
+            if "error" in data:
+                raise RuntimeError(f"Dataset error payload: {data['error']}")
+            if "data" in data and isinstance(data["data"], list):
+                all_records.extend(data["data"])
+                # Extract next page link if present
+                next_url = data.get("links", {}).get("next")
+                url = next_url if next_url else ""
+                payload = None
+                continue
+            raise ValueError(
+                f"Unexpected dataset response type dict keys={list(data)[:5]} excerpt={str(data)[:200]}"
+            )
+        if isinstance(data, list):
+            all_records.extend(data)
+            break
         raise ValueError(
-            f"Unexpected dataset response type dict keys={list(data)[:5]} excerpt={str(data)[:200]}"
+            f"Unexpected dataset response type {type(data)} excerpt={str(data)[:200]}"
         )
-    if isinstance(data, list):
-        return data
-    raise ValueError(
-        f"Unexpected dataset response type {type(data)} excerpt={str(data)[:200]}"
-    )
+
+    return all_records
+
 
 
 def _fetch_batch_with_retry(
