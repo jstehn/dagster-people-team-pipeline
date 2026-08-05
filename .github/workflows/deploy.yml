@@ -51,6 +51,7 @@ jobs:
           KEYFILE_GCP_PEOPLE_TEAM_DRIVE: ${{ secrets.KEYFILE_GCP_PEOPLE_TEAM_DRIVE }}
           ALL_SECRETS_JSON_FOR_ENV_EXPORT: ${{ toJson(secrets) }}
         run: |
+          export PATH="$HOME/.local/bin:$PATH"
           python -m pip install pip --upgrade
           cd project-repo
           echo "Installing project dependencies..."
