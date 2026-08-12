@@ -22,11 +22,16 @@ with raw as (
                 TRY_CAST(position_goal AS STRING) as position_goal,
                 TRY_CAST(position_full AS STRING) as position_full,
                 TRY_CAST(position_credential AS STRING) as position_credential,
+                TRY_CAST(friendly_names AS STRING) as friendly_names,
+                TRY_CAST(salary_scale AS STRING) as salary_scale,
+                TRY_CAST(position_school_level AS STRING) as position_school_level,
                 TRY_CAST(position_start_number AS BIGINT) as position_start_number,
                 TRY_CAST(position_end_number AS BIGINT) as position_end_number,
                 TRY_CAST(_dlt_load_id AS STRING) as _dlt_load_id,
                 TRY_CAST(_dlt_id AS STRING) as _dlt_id,
-                TRY_CAST(notes AS STRING) as notes
+                -- Notes was removed from the source sheet; kept as a typed null
+                -- placeholder so downstream consumers keep the column.
+                TRY_CAST(null AS STRING) as notes
         {% else %}
             SAFE_CAST(position_id as STRING) as position_id,
             SAFE_CAST(position_unique as BOOLEAN) as position_unique,
@@ -43,11 +48,16 @@ with raw as (
             SAFE_CAST(position_goal as STRING) as position_goal,
             SAFE_CAST(position_full as STRING) as position_full,
             SAFE_CAST(position_credential as STRING) as position_credential,
+            SAFE_CAST(friendly_names as STRING) as friendly_names,
+            SAFE_CAST(salary_scale as STRING) as salary_scale,
+            SAFE_CAST(position_school_level as STRING) as position_school_level,
             SAFE_CAST(position_start_number as INT64) as position_start_number,
             SAFE_CAST(position_end_number as INT64) as position_end_number,
             SAFE_CAST(_dlt_load_id as STRING) as _dlt_load_id,
             SAFE_CAST(_dlt_id as STRING) as _dlt_id,
-            SAFE_CAST(notes as STRING) as notes
+            -- Notes was removed from the source sheet; kept as a typed null
+            -- placeholder so downstream consumers keep the column.
+            SAFE_CAST(null as STRING) as notes
         {% endif %}
     from {{ source('raw_staff_data', 'raw_position_control_positions') }}
     {% if is_incremental() %}

@@ -102,6 +102,7 @@ def position_control_source(
         # Define type conversions
         conversions = {
             "Position_Count": ensure_str,
+            "Salary_Scale": ensure_str,
         }
         for row in data:
             if is_valid_row(row, "Position_ID"):
