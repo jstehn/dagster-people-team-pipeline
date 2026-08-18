@@ -23,6 +23,17 @@ def get_destination():
 
 DEST = get_destination()
 
+# The live Position Control workbook is large and formula-heavy enough that
+# API reads to it are slow and occasionally unavailable. If a mirror is
+# configured, the pipeline reads from it instead of the live sheet. An Apps
+# Script bound to the live workbook keeps the mirror refreshed on its own
+# daily trigger, independent of this pipeline. Falls back to the live sheet
+# when the mirror isn't configured (e.g. local/dev), so this is a no-op
+# until POSITION_CONTROL_MIRROR_SHEET_ID is set.
+_POSITION_CONTROL_READ_SHEET_ID = EnvVar(
+    "POSITION_CONTROL_MIRROR_SHEET_ID"
+).get_value() or EnvVar("POSITION_CONTROL_SHEET_ID").get_value()
+
 
 @dlt_assets(
     dlt_source=bamboohr_source(),
@@ -65,7 +76,9 @@ def dagster_paycom_assets(
 
 
 @dlt_assets(
-    dlt_source=position_control_source(),
+    dlt_source=position_control_source(
+        position_control_sheet_id=_POSITION_CONTROL_READ_SHEET_ID
+    ),
     dlt_pipeline=pipeline(
         pipeline_name="position_control_pipeline",
         dataset_name="staff",
@@ -80,6 +93,10 @@ def dagster_position_control_assets(
 ):
     """
     Loads position control data into the staff schema using DLT.
+
+    Reads from the values-only mirror when one is configured; an Apps
+    Script bound to the live workbook keeps it refreshed on its own daily
+    trigger, ahead of this job's schedule.
     """
     yield from dlt_resource.run(context=context, write_disposition="merge")
 
