@@ -2,7 +2,13 @@
 
 import socket
 from typing import Any, List, Tuple
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
+from tenacity import (
+    retry,
+    retry_if_exception,
+    stop_after_attempt,
+    stop_after_delay,
+    wait_exponential,
+)
 
 from dlt.common.exceptions import MissingDependencyException
 from dlt.common.typing import DictStrAny
@@ -32,14 +38,19 @@ def is_retry_status_code(exception: BaseException) -> bool:
     ) or isinstance(exception, (TimeoutError, ConnectionError))
 
 
+# Bound retries by wall clock, not just attempt count. The Position Control
+# workbook is large enough that a single read can take ~30s, so the previous
+# schedule (10 attempts, backoff up to 120s) could spend ~12 minutes per
+# resource before surfacing a failure. Capping total retry time keeps a
+# transient 429/503 from turning into a silent multi-minute stall.
 retry_deco = retry(
-    # Retry if it's a rate limit error (HTTP 429)
+    # Retry on rate limits (429), server errors (5xx) and network timeouts
     retry=retry_if_exception(is_retry_status_code),
-    # Use exponential backoff for the waiting time between retries, starting with 5 seconds
-    wait=wait_exponential(multiplier=1.5, min=5, max=120),
-    # Stop retrying after 10 attempts
-    stop=stop_after_attempt(10),
-    # Print out the retrying details
+    # Exponential backoff, capped so a single sleep cannot dominate the budget
+    wait=wait_exponential(multiplier=1.5, min=5, max=30),
+    # Give up after ~3 minutes of retrying, or 5 attempts, whichever comes first
+    stop=(stop_after_delay(180) | stop_after_attempt(5)),
+    # Raise the original error rather than tenacity's RetryError
     reraise=True,
 )
 

@@ -67,6 +67,16 @@ def convert_types(
     return row
 
 
+# Tabs read from the Position Control workbook, fetched in a single batch.
+POSITION_CONTROL_TABS = [
+    "Positions",
+    "Employees",
+    "Adjustments",
+    "Stipends",
+    "Assignments",
+]
+
+
 @dlt.source(name="position_control_source")
 def position_control_source(
     position_control_sheet_id: str = dlt.config.value,
@@ -80,6 +90,35 @@ def position_control_source(
     Returns:
         List[dlt.Resource]: A list of resources for processing Position Control data.
     """
+    # Cache of tab name -> rows, populated on first use by _tab_rows.
+    tab_cache: Dict[str, list] = {}
+
+    def _tab_rows(tab_name: str):
+        """
+        Yield rows for one tab, reading every tab in a single batched request.
+
+        Each resource used to call google_spreadsheet itself, so one pipeline run
+        re-authenticated, re-fetched workbook metadata and issued a separate
+        values request five times over. The Position Control workbook is large
+        (~1.3M cells across 21 tabs) and Google re-evaluates it on every read, so
+        that overhead was paid five times per run. Fetching all ranges in one
+        batchGet pays it once.
+
+        The read is deferred until a resource is first iterated: position_control_source()
+        is evaluated at import time by the Dagster asset definitions, and hitting
+        the Sheets API there would make loading the code location slow and
+        failure-prone.
+        """
+        if not tab_cache:
+            sheets = google_spreadsheet(
+                position_control_sheet_id=position_control_sheet_id,
+                range_names=POSITION_CONTROL_TABS,
+                get_sheets=False,
+                get_named_ranges=False,
+            )
+            for name in POSITION_CONTROL_TABS:
+                tab_cache[name] = list(sheets.resources[name])
+        yield from tab_cache.get(tab_name, [])
 
     @dlt.resource(
         name="raw_position_control_positions",
@@ -93,12 +132,7 @@ def position_control_source(
         Yields:
             Dict[str, Any]: Parsed and converted rows of positions data.
         """
-        data = google_spreadsheet(
-            position_control_sheet_id=position_control_sheet_id,
-            range_names=["Positions"],
-            get_sheets=False,
-            get_named_ranges=False,
-        )
+        data = _tab_rows("Positions")
         # Define type conversions
         conversions = {
             "Position_Count": ensure_str,
@@ -120,12 +154,7 @@ def position_control_source(
         Yields:
             Dict[str, Any]: Parsed rows of employees data.
         """
-        data = google_spreadsheet(
-            position_control_sheet_id=position_control_sheet_id,
-            range_names=["Employees"],
-            get_sheets=False,
-            get_named_ranges=False,
-        )
+        data = _tab_rows("Employees")
         for row in data:
             if is_valid_row(row, "Employee_ID"):
                 yield row
@@ -142,12 +171,7 @@ def position_control_source(
         Yields:
             Dict[str, Any]: Parsed and converted rows of adjustments data.
         """
-        data = google_spreadsheet(
-            position_control_sheet_id=position_control_sheet_id,
-            range_names=["Adjustments"],
-            get_sheets=False,
-            get_named_ranges=False,
-        )
+        data = _tab_rows("Adjustments")
         # Define type conversions
         conversions = {
             "Adjustment_PPP": ensure_float,
@@ -171,12 +195,7 @@ def position_control_source(
         Yields:
             Dict[str, Any]: Parsed rows of stipends data.
         """
-        data = google_spreadsheet(
-            position_control_sheet_id=position_control_sheet_id,
-            range_names=["Stipends"],
-            get_sheets=False,
-            get_named_ranges=False,
-        )
+        data = _tab_rows("Stipends")
         for row in data:
             if is_valid_row(row, "Stipend_ID") and row.get("Employee_ID"):
                 yield row
@@ -193,12 +212,7 @@ def position_control_source(
         Yields:
             Dict[str, Any]: Parsed and converted rows of assignments data.
         """
-        data = google_spreadsheet(
-            position_control_sheet_id=position_control_sheet_id,
-            range_names=["Assignments"],
-            get_sheets=False,
-            get_named_ranges=False,
-        )
+        data = _tab_rows("Assignments")
         # Define type conversions
         conversions = {
             "Assignment_Scale": ensure_str,
