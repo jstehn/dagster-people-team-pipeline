@@ -193,29 +193,43 @@ def get_range_headers(headers_metadata: List[DictStrAny], range_name: str) -> Li
     return headers
 
 
-def get_data_types(data_row_metadata: List[DictStrAny]) -> List[TDataType]:
+def get_data_types(data_rows_metadata: List[List[DictStrAny]]) -> List[TDataType]:
     """
-    Determines if each column in the first line of a range contains datetime objects.
+    Determines if each column contains datetime objects, sampling across
+    several data rows rather than only the first.
+
+    A single blank or unformatted row in the first sampled position -- a
+    placeholder or template row left in the sheet, for example -- would
+    otherwise prevent detecting a date/datetime column at all, silently
+    passing through every other row's date value as a raw serial number
+    instead of converting it.
 
     Args:
-        data_row_metadata (List[DictStrAny]): Metadata of the first row of data
+        data_rows_metadata (List[List[DictStrAny]]): Metadata for each
+            sampled data row, each a list of per-cell metadata dicts.
 
     Returns:
-        List[TDataType]: "timestamp" or "data" indicating the date/time type for a column, otherwise None
+        List[TDataType]: "timestamp" or "date" indicating the date/time type for a column, otherwise None
     """
+    if not data_rows_metadata:
+        return []
 
-    # get data for 1st column and process them, if empty just return an empty list
     try:
-        data_types: List[TDataType] = [None] * len(data_row_metadata)
-        for idx, val_dict in enumerate(data_row_metadata):
-            try:
-                data_type = val_dict["effectiveFormat"]["numberFormat"]["type"]
-                if data_type in ["DATE_TIME", "TIME"]:
-                    data_types[idx] = "timestamp"
-                elif data_type == "DATE":
-                    data_types[idx] = "date"
-            except KeyError:
-                pass
+        num_cols = len(data_rows_metadata[0])
+        data_types: List[TDataType] = [None] * num_cols
+        for row_metadata in data_rows_metadata:
+            for idx, val_dict in enumerate(row_metadata):
+                if idx >= num_cols or data_types[idx] is not None:
+                    # already resolved from an earlier sampled row
+                    continue
+                try:
+                    data_type = val_dict["effectiveFormat"]["numberFormat"]["type"]
+                    if data_type in ["DATE_TIME", "TIME"]:
+                        data_types[idx] = "timestamp"
+                    elif data_type == "DATE":
+                        data_types[idx] = "date"
+                except KeyError:
+                    pass
         return data_types
     except IndexError:
         return []

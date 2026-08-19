@@ -134,17 +134,17 @@ def google_spreadsheet(
         if headers is None:
             # generate automatic headers and treat the first row as data
             headers = [f"col_{idx + 1}" for idx in range(len(headers_metadata))]
-            data_row_metadata = headers_metadata
+            data_rows_metadata = [row["values"] for row in metadata["rowData"]]
             rows_data = values[0:]
             logger.warning(
                 f"Using automatic headers. WARNING: first row of the range {name} will be used as data!"
             )
         else:
             # first row contains headers and is skipped
-            data_row_metadata = metadata["rowData"][1]["values"]
+            data_rows_metadata = [row["values"] for row in metadata["rowData"][1:]]
             rows_data = values[1:]
 
-        data_types = get_data_types(data_row_metadata)
+        data_types = get_data_types(data_rows_metadata)
 
         yield dlt.resource(
             process_range(rows_data, headers=headers, data_types=data_types),

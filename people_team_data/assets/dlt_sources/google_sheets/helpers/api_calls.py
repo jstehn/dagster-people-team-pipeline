@@ -153,8 +153,19 @@ def get_data_for_ranges(
         values: List[List[Any]] = range_.get("values", None)
         if values:
             parsed_range, values = trim_range_top_left(parsed_range, values)
-        # create a new range to get first two rows
-        meta_range = parsed_range._replace(end_row=parsed_range.start_row + 1)
+        # Sample more than just the first data row for cell-format-based type
+        # inference (see get_data_types): a single blank or unformatted row
+        # in that first position -- a placeholder/template row, for example
+        # -- would otherwise prevent detecting a date/datetime column for
+        # the whole range, silently corrupting every other row's date
+        # conversion. Bounded to keep the metadata payload small.
+        type_inference_sample_rows = 20
+        meta_range = parsed_range._replace(
+            end_row=min(
+                parsed_range.start_row + type_inference_sample_rows,
+                parsed_range.end_row,
+            )
+        )
         # print(f"{name}:{parsed_range}:{meta_range}")
         rv.append((name, parsed_range, meta_range, values))
     return rv
