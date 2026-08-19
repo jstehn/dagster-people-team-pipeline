@@ -164,14 +164,31 @@ def get_range_headers(headers_metadata: List[DictStrAny], range_name: str) -> Li
         h: dlt.current.source_schema().naming.normalize_identifier(h) for h in headers
     }
     if len(set(header_mappings.values())) != len(headers):
+        # A duplicate is usually a handful of accidentally-copied cells (e.g.
+        # a formula or value dragged across a row), not evidence that the
+        # whole header row is unusable. Previously this returned None here,
+        # which discarded every real header name for the range and treated
+        # row 1 as data -- silently dropping all rows whose validity filters
+        # key on a real header name (e.g. "Employee_ID"), for as long as the
+        # duplicate went unnoticed. De-duplicating instead keeps every
+        # correctly-named column working; only the duplicated cells lose
+        # their original meaning, which they had already lost by colliding.
         logger.warning(
-            "Header names must be unique otherwise you risk that data in columns with duplicate header names to be lost. Note that several destinations require "
-            + "that column names are normalized ie. must be lower or upper case and without special characters. dlt normalizes those names for you but it may "
-            + f"result in duplicate column names. Headers in range {range_name} are mapped as follows: "
+            f"Duplicate header names detected in range {range_name}, de-duplicating "
+            "by appending a numeric suffix so the rest of the range can still be "
+            "processed. Headers are mapped as follows: "
             + ", ".join([f"{k}->{v}" for k, v in header_mappings.items()])
-            + ". Please use make your header names unique."
         )
-        return None
+        seen_counts: DictStrAny = {}
+        deduped_headers = []
+        for h in headers:
+            normalized = header_mappings[h]
+            seen_counts[normalized] = seen_counts.get(normalized, 0) + 1
+            if seen_counts[normalized] > 1:
+                deduped_headers.append(f"{h}_{seen_counts[normalized]}")
+            else:
+                deduped_headers.append(h)
+        headers = deduped_headers
 
     return headers
 

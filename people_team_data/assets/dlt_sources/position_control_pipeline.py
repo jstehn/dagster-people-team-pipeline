@@ -76,6 +76,34 @@ POSITION_CONTROL_TABS = [
     "Assignments",
 ]
 
+# Columns each tab's row-validity filter below looks up by name. If one of
+# these disappears from the sheet -- renamed, removed, or lost to a header
+# parsing failure -- every row for that tab silently fails its filter and
+# the resource loads zero rows. That happened for a week undetected when
+# Assignments' header row got corrupted upstream. Validating these
+# immediately after reading turns a real column rename into a loud, visible
+# run failure instead of a silent, empty load.
+REQUIRED_COLUMNS = {
+    "Positions": ["Position_ID"],
+    "Employees": ["Employee_ID"],
+    "Adjustments": ["Adjustment_ID"],
+    "Stipends": ["Stipend_ID", "Employee_ID"],
+    "Assignments": ["Assignment_ID", "Employee_ID", "Position_ID"],
+}
+
+
+def _validate_required_columns(tab_name: str, rows: list) -> None:
+    if not rows:
+        return
+    present = set(rows[0].keys())
+    missing = [c for c in REQUIRED_COLUMNS.get(tab_name, []) if c not in present]
+    if missing:
+        raise ValueError(
+            f"Position Control tab '{tab_name}' is missing expected column(s) "
+            f"{missing}. Check for a renamed, removed, or duplicated header in "
+            f"the sheet. Columns found: {sorted(present)}"
+        )
+
 
 @dlt.source(name="position_control_source")
 def position_control_source(
@@ -118,6 +146,7 @@ def position_control_source(
             )
             for name in POSITION_CONTROL_TABS:
                 tab_cache[name] = list(sheets.resources[name])
+                _validate_required_columns(name, tab_cache[name])
         yield from tab_cache.get(tab_name, [])
 
     @dlt.resource(
